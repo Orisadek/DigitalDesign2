@@ -15,7 +15,8 @@
 `define OPERAND_C 10000
 module matmul_calc_module(clk_i,rst_ni,n_dim_i,k_dim_i,m_dim_i
 ,start_i,data_a_i,data_b_i,data_c_i,mode_i,read_target_i,write_target_i,
-data_o,address_o,address_a_o,address_b_o,address_c_o,finish_mul_o,enable_w_o);
+data_o,address_o,address_a_o,address_b_o,
+address_c_o,flags_o,finish_mul_o,enable_w_o);
 //-------------------ports----------------------------------------------//
 input  clk_i,rst_ni,start_i,mode_i; // clock , reset , start bit from control , mode bit : if to add prev c
 input  n_dim_i,k_dim_i,m_dim_i; // matrix A is NxK , matrix B KxM
@@ -93,24 +94,24 @@ generate  // grenerate the block
 			if(~rst)
 				begin
 					b = 0;
-					data_o <= {(BUS_WIDTH){1'b0}};			
-					finishWrite<=1'b0;			
+					data_o      <= {(BUS_WIDTH){1'b0}};			
+					finishWrite <= 1'b0;						
 				end
 			else if(finishMulWire and b < MAX_DIM*MAX_DIM) //if we writing and in strobe and enabled
 				begin
-					address_o[4:0] = OPERAND_C;
-					address_o[5+:2*$clog2(MAX_DIM)] = b;
-					data_o     <= cMatrixWireBias[BUS_WIDTH*b-1:0];
-					enable_w_o <= 1'b1;
+					address_o[4:0] 					<= OPERAND_C;
+					address_o[5+:2*$clog2(MAX_DIM)] <= b;
+					data_o     						<= cMatrixWireBias[BUS_WIDTH*b-1:0];
+					enable_w_o 						<= 1'b1;
 					b = b + 1;
 				end
 			else if(finishMulWire and b == MAX_DIM*MAX_DIM)
 				begin
 					enable_w_o   <= 1'b0;
 					finish_mul_o <= 1'b1;
-					data_o       <= {(BUS_WIDTH){1'b0}};
+					data_o       <= {(BUS_WIDTH){1'bz}};
 					b = 0;
-					finishWrite<=1'b1;	
+					finishWrite  <= 1'b1;	
 				end
 			else 
 				begin
@@ -123,5 +124,6 @@ generate  // grenerate the block
 	end
 endgenerate
 
-	
+
+assign flags_o = {(BUS_WIDTH-MAX_DIM*MAX_DIM){1'b0},flags_local} ;
 assign 	cMatrixWireBias = cMatrixWire + c_bias;
