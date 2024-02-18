@@ -38,5 +38,5 @@ always @(posedge clk_i or negedge rst_ni) begin: insert
  end
 
          // Output assignment for read data
-assign data_o = write_enable_i ?{(MAX_DIM*MAX_DIM){1'b0}}:Mem; // read the data async
+assign data_o = write_enable_i ?{(MAX_DIM*MAX_DIM){1'bz}}:Mem; // read the data async
 endmodule

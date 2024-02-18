@@ -27,7 +27,7 @@ wire clk_i,rst_ni,start_i;// clock , reset , start bit from control
 wire [2:0] n_dim_i,k_dim_i,m_dim_i; // matrix A is NxK , matrix B KxM
 wire signed [(MAX_DIM*MAX_DIM*DATA_WIDTH)-1:0] a_matrix_i; // this matrix is actually  long register
 wire signed [(MAX_DIM*MAX_DIM*DATA_WIDTH)-1:0] b_matrix_i; // this matrix is actually  long register
-wire  signed [(MAX_DIM*MAX_DIM*(2*DATA_WIDTH))-1:0] c_matrix_o; // output matrix is actually long matrix
+wire  signed [(MAX_DIM*MAX_DIM*(BUS_WIDTH))-1:0] c_matrix_o; // output matrix is actually long matrix
 wire [(MAX_DIM*MAX_DIM) -1:0] flags_o; 					// flags for overflow in pe
 reg finish_mul_o; // write out when finished
 wire signed [DATA_WIDTH-1:0] matA [MAX_DIM:0][MAX_DIM:0]; // wires for pe's rows
@@ -64,7 +64,7 @@ endgenerate
 generate
   for (j = 0; j < MAX_DIM; j = j +1) begin : rows_assign // connect rows output and matC
 	   for (i = 0; i < MAX_DIM; i = i +1) begin : cols_assign // connect cols output and matC
-		     assign c_matrix_o[(j*(2*DATA_WIDTH)*MAX_DIM+i*(2*DATA_WIDTH))+:2*DATA_WIDTH] = matC[i][j][2*DATA_WIDTH-1:0]; // conect the wires
+		     assign c_matrix_o[(j*(BUS_WIDTH)*MAX_DIM+i*(BUS_WIDTH))+:BUS_WIDTH] = matC[i][j]; // conect the wires
 	   end // end for i
   end // end for j
  endgenerate  
@@ -134,7 +134,7 @@ always @(posedge clk_i or negedge rst_ni)
 	    end // end if
     else if(start_i && counter<(k_dim_i+m_dim_i+n_dim_i-2)) // make sure not to happen if we finished
 		begin
-			for (index_b = 0; index_b < MAX_DIM; index_b= index_b[2*MAX_DIM:0] +1) // loop with index_a 
+			for (index_b = 0; index_b < MAX_DIM; index_b = index_b[2*MAX_DIM:0] +1) // loop with index_a 
 				begin : Top  // start insert to reg the values
 					regMatB[index_b] <= (counter-index_b>=0 && counter-index_b<{{(2*MAX_DIM){1'b0}},m_dim_i} && index_b < {{(2*MAX_DIM-1){1'b0}},k_dim_i}) ? // if the condition is true insert value 
 					b_matrix_i[(index_b*MATRIX_WORD)+((counter-index_b)*DATA_WIDTH)+:DATA_WIDTH]: {DATA_WIDTH{1'b0}};									   // else insert zero (MUX)
@@ -149,11 +149,11 @@ always @(posedge clk_i or negedge rst_ni)
 		begin
 			finish_mul_o <= 1'b0; // init to 0
 		end
-    else if(start_i && (counter>=(k_dim_i+m_dim_i+n_dim_i-2))) // make sure not to happen if we finished
+    else if(~finish_write_i && start_i && (counter>=(k_dim_i+m_dim_i+n_dim_i-2))) // make sure not to happen if we finished
 		begin
 			finish_mul_o <= 1'b1; // sign that we finish the operation
 		end	 // end  if
-	else
+	else 
 		begin
 			finish_mul_o <= 1'b0; // sign that we didnt finish the operation
 		end	 // end  if

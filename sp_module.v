@@ -10,12 +10,12 @@
 
 `resetall
 `timescale 1ns/10ps
-module sp_module (clk_i,rst_ni,write_enable_i,address_i,data_i,data_o); //descripition for all inputs\outputs
+module sp_module (clk_i,rst_ni,write_enable_i,address_i,data_i,mode_i,write_target_i,read_target_i,address_sp_i,data_o,data_sp_o); //descripition for all inputs\outputs
 input clk_i,rst_ni; // clk,reset
 input write_enable_i; // enable writing to operands
-input address_i; // adress of writing (for line/col)
+input address_i,address_sp_i; // adress of writing (for line/col)
 input data_i; //the data we want to write
-output data_o; // the data we read (line/col)
+output data_o,data_sp_o; // the data we read (line/col)
 parameter  SP_NTARGETS = 4; //The number of addressable targets in sp
 parameter  DATA_WIDTH  = 32; // data width
 parameter  BUS_WIDTH   = 64; // bus width
@@ -23,14 +23,14 @@ parameter  ADDR_WIDTH  = 32; // addr width
 localparam MAX_DIM     = (BUS_WIDTH / DATA_WIDTH); // max dim matrix
 
 //--------------------Wires-------------------
-wire [[2*$clog2(MAX_DIM)-1:0]] address_i; // adress of writing (for line/col)
+wire [2*$clog2(MAX_DIM)-1:0] address_i,address_sp_i; // adress of writing (for line/col)
 wire [BUS_WIDTH-1:0] data_i; //the input result matrix we need to save
-wire [BUS_WIDTH-1:0] data_o; // the data we read (line/col)
+wire [BUS_WIDTH-1:0] data_o,data_sp_o; // the data we read (line/col)
 wire write_enable_i; //enabler to write the data
 wire clk_i,rst_ni; // clk and rst
 reg  [BUS_WIDTH-1:0] mem [SP_NTARGETS*MAX_DIM*MAX_DIM-1:0]; // where we keep the resulte matries. 
 
-genvar line_num,b; // generate a var name
+genvar b; // generate a var name
 generate
 	always @(posedge clk_i) 
 		begin: inserting // we want it to activate during clk or rst
@@ -40,25 +40,17 @@ generate
 						begin
 							mem[b] <=  {(BUS_WIDTH){1'b0}}; //implement 0 insted.
 						end
-					line_num = 0;
 				end 
 			else if(write_enable_i) //if enable 
 				begin
-					mem[address_i*MAX_DIM*MAX_DIM  + line_num] <= data_i; // sub addressing 
-					if(line_num < MAX_DIM)
-						begin
-							line_num = line_num+1;
-						end
-					else
-						begin
-							line_num = 0;
-						end
+					mem[write_target_i*MAX_DIM*MAX_DIM + address_i] <= data_i; // sub addressing 
 				end
 		end
 endgenerate
 
 
-assign data_o = (write_enable_i == 1'b0) ? mem[address_i] :  {(BUS_WIDTH){1'b0}}; //read data is when not on write mod
+assign data_o    = (write_enable_i == 1'b0 and mode_i) ? mem[read_target_i*MAX_DIM*MAX_DIM+address_i]:{(BUS_WIDTH){1'bz}}; //read data is when not on write mod
+assign data_sp_o = (write_enable_i == 1'b0 and mode_i) ? mem[read_target_i*MAX_DIM*MAX_DIM+address_sp_i]:{(BUS_WIDTH){1'bz}}; //read data is when not on write mod
 
 
 endmodule
