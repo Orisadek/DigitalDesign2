@@ -52,8 +52,8 @@ reg finish_mul_o; // signals to enable write to sp and assert we ended the matmu
 wire finishMulWire;
 reg  finishWrite; // local variable for finishMulWire from the inside module
 wire signed [(MAX_DIM*MAX_DIM*BUS_WIDTH)-1:0] cMatrixWire,cMatrixWireBias; // output matrix is actually long matrix
-wire [MAX_DIM*MAX_DIM-1:0] flags_o;
-reg [MAX_DIM*MAX_DIM -1:0] index_byte;
+wire [BUS_WIDTH-1:0] flags_o;
+reg [2*$clog2(MAX_DIM)-1:0] index_byte;
 reg overflow_bit,overflow_a_b_bit,overflow_c_bit;
 
 //-----------------------------matmul unit-----------------------------------//
@@ -75,9 +75,9 @@ matrix_multiple_module #(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH)) U_matmul
 genvar index_mat,index_mat_c; // b variable
 generate  // grenerate the block
 		assign address_a_o[4:0] = OPERAND_A;
-		assign address_a_o[5+$clog2(MAX_DIM)-1:5] = 0;
+		assign address_a_o[5+$clog2(MAX_DIM)-1:5] = {($clog2(MAX_DIM)){1'b0}};
 		assign address_b_o[4:0] = OPERAND_B;
-		assign address_b_o[5+$clog2(MAX_DIM)-1:5] = 0;
+		assign address_b_o[5+$clog2(MAX_DIM)-1:5] = {($clog2(MAX_DIM)){1'b0}};
 		assign address_b_o[ADDR_WIDTH-1:5+$clog2(MAX_DIM)] = 0;
 		assign address_a_o[ADDR_WIDTH-1:5+$clog2(MAX_DIM)] = 0;
 	for(index_mat = 0;index_mat < MAX_DIM;index_mat = index_mat+1)
@@ -101,7 +101,7 @@ always@(posedge clk_i or negedge rst_ni)
 			begin
 				a_matrix_local[(addr_log+1)*MAX_DIM*DATA_WIDTH-1-:BUS_WIDTH] <= data_a_i;
 				b_matrix_local[(addr_log+1)*MAX_DIM*DATA_WIDTH-1-:BUS_WIDTH] <= data_b_i;
-				if(addr_log == MAX_DIM-1) addr_log<=0;
+				if(addr_log == MAX_DIM-1) addr_log <= {($clog2(MAX_DIM)){1'b0}};
 				else {overflow_a_b_bit,addr_log} <= addr_log + 1;	
 					
 			end
@@ -140,14 +140,15 @@ always @(posedge clk_i or negedge rst_ni)// sensitivity list
 			begin
 				data_o       <= {(BUS_WIDTH){1'b0}};			
 				finishWrite  <= 1'b0;	
-				index_byte   <= {(MAX_DIM*MAX_DIM){1'b0}};		
-				overflow_bit <= 0;
-				enable_w_o   <= 0;
+				index_byte   <= {(2*$clog2(MAX_DIM)){1'b0}};		
+				overflow_bit <= 1'b0;
+				enable_w_o   <= 1'b0;
 				finish_mul_o <= 1'b0;
+				address_o 	 <= {(ADDR_WIDTH){1'b0}};
 			end
 		else if(finishMulWire && index_byte < MAX_DIM*MAX_DIM) //if we writing and in strobe and enabled
 			begin
-				address_o[4:0] 					<= OPERAND_C;
+				address_o[4:0] 				       <= OPERAND_C;
 				address_o[5+2*$clog2(MAX_DIM)-1:5] <= index_byte;
 				data_o     						<= cMatrixWireBias[BUS_WIDTH*(index_byte+1)-1-:BUS_WIDTH];
 				enable_w_o 						<= 1'b1;
@@ -157,17 +158,17 @@ always @(posedge clk_i or negedge rst_ni)// sensitivity list
 			begin
 				enable_w_o   <= 1'b0;
 				finish_mul_o <= 1'b1;
-				data_o       <= {(BUS_WIDTH){1'bz}};
+				data_o       <= {(BUS_WIDTH){1'b0}};
 				finishWrite  <= 1'b1;	
-				index_byte   <= {(MAX_DIM*MAX_DIM){1'b0}};
+				index_byte   <= {(2*$clog2(MAX_DIM)){1'b0}};
 			end
 		else 
 			begin
 				enable_w_o   <= 1'b0;
 				finish_mul_o <= 1'b0;
 				finishWrite  <= 1'b0;
-				data_o       <= {(BUS_WIDTH){1'bz}};
-				address_o 	 <= {(ADDR_WIDTH){1'bz}};
+				data_o       <= {(BUS_WIDTH){1'b0}};
+				address_o 	 <= {(ADDR_WIDTH){1'b0}};
 			end
 	end
 
@@ -177,3 +178,8 @@ assign flags_o = {{(BUS_WIDTH-MAX_DIM*MAX_DIM){1'b0}},flags_local};
 assign 	cMatrixWireBias = cMatrixWire + c_bias;
 
 endmodule
+
+/*
+State bit(s) 'address_o[31:7]' has/have a stuck-at-0 fault. - not needed values
+State bit(s) 'address_o[3:0]' has/have a stuck-at-0 fault.  - OPERAND_C or zero , that okay
+*/

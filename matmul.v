@@ -24,7 +24,7 @@ wire rst_ni,clk_i;
 
 wire [1:0] nDim,kDim,mDim;
 wire startBit,modeBit;
-wire [MAX_DIM*MAX_DIM-1:0] flagsData;
+wire [BUS_WIDTH-1:0] flagsData;
 wire finishMul,enableWriteSp;
 wire signed [BUS_WIDTH-1:0] matA,matB,matC;
 wire psel_i,penable_i,pwrite_i;
@@ -82,14 +82,14 @@ apb_slave_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR
 .bus_mem_o(writeDataApb)
 );
 
-register_file_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR_WIDTH),.SP_NTARGETS(SP_NTARGETS))(
+register_file_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR_WIDTH),.SP_NTARGETS(SP_NTARGETS)) U_register_file(
 .clk_i(clk_i),
 .rst_ni(rst_ni),
 .address_i(addressMem),
 .data_i(writeDataMem),
 .data_flags_i(flagsData),
 .write_enable_i(writeEnable),
-.strobe_i(strobe_i),
+.strobe_i(pstrb_i),
 .sp_enable_i(enableWriteSp),
 .address_a_i(addressReadA),
 .address_b_i(addressReadB),

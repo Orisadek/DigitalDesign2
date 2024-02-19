@@ -54,42 +54,42 @@ begin:begin_switch_case
 	case(address_i[4:0])  // current state
 		CONTROL: // control
 			begin
-				data_o  = write_enable_i ? {(BUS_WIDTH){1'bz}} : {{(BUS_WIDTH-CONTROL_WIDTH){1'b0}},dataCtrl};
+				data_o  = write_enable_i ? {(BUS_WIDTH){1'b0}} : {{(BUS_WIDTH-CONTROL_WIDTH){1'b0}},dataCtrl};
 				wEnCtrl = write_enable_i ? 1'b1 : 1'b0;
 				wEnMatA = 0;
 				wEnMatB = 0;
 			end
 		OPERAND_A: // operand A
 			begin
-				data_o  = write_enable_i ? {(BUS_WIDTH){1'bz}} : dataOpA;
+				data_o  = write_enable_i ? {(BUS_WIDTH){1'b0}} : dataOpA;
 				wEnMatA = write_enable_i ? 1'b1 : 1'b0;
 				wEnCtrl = 0;
 				wEnMatB = 0;
 			end
 		OPERAND_B: // operand B
 			begin
-				data_o  = write_enable_i ? {(BUS_WIDTH){1'bz}} : dataOpB;
+				data_o  = write_enable_i ? {(BUS_WIDTH){1'b0}} : dataOpB;
 				wEnMatB = write_enable_i ? 1'b1 : 1'b0;
 				wEnCtrl = 0;
 				wEnMatA = 0;
 			end
 		FLAGS: // flags
 			begin
-				data_o  = sp_enable_i ? {(BUS_WIDTH){1'bz}} : dataFlags;
+				data_o  = sp_enable_i ? {(BUS_WIDTH){1'b0}} : dataFlags;
 				wEnCtrl = 0;
 				wEnMatA = 0;
 				wEnMatB = 0;
 			end
 		SP: // scrachpad
 			begin
-				data_o = sp_enable_i ? {(BUS_WIDTH){1'bz}} : dataSp;
+				data_o = sp_enable_i ? {(BUS_WIDTH){1'b0}} : dataSp;
 				wEnCtrl = 0;
 				wEnMatA = 0;
 				wEnMatB = 0;
 			end
 		default:
 				begin
-					data_o = {(BUS_WIDTH){1'bz}};
+					data_o = {(BUS_WIDTH){1'b0}};
 					wEnCtrl = 0;
 					wEnMatA = 0;
 					wEnMatB = 0;
