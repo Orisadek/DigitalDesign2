@@ -13,23 +13,23 @@
 module flags_module (clk_i,rst_ni,write_enable_i,data_i,data_o);
 input clk_i,rst_ni; // clk,reset
 input write_enable_i; // enable writing to operands (can be the data ready in the matmul)
-input write_data_i; //the data we want to write (Max_dim^2 bits, each for every square)
-output read_data_o; // the data we read (Max_dim^2 length register)
+input data_i; //the data we want to write (Max_dim^2 bits, each for every square)
+output data_o; // the data we read (Max_dim^2 length register)
 
 parameter DATA_WIDTH = 32; // data width
 parameter BUS_WIDTH = 64; // bus width
 parameter MAX_DIM = (BUS_WIDTH / DATA_WIDTH); // max dim matrix
-
+wire write_enable_i,clk_i,rst_ni;
 wire [BUS_WIDTH-1:0] data_i; //the data we ant to write
-wire [MAX_DIM*MAX_DIM2-1:0] data_o; // the data we read (line/col)
+wire [BUS_WIDTH-1:0] data_o; // the data we read (line/col)
 
     // Declare the register
 reg [MAX_DIM*MAX_DIM-1:0] flags; // a register MAX_DIM^2 LENGTH, each bit is corspond to the matmul square that indicats where there is an over\under flow
 
 always @(posedge clk_i or negedge rst_ni) begin: insert
-    if (!rst_ni) // on negative edge
+    if (~rst_ni) // on negative edge
 	     begin
-		    flags <={(MAX_DIM*MAX_DIM){1'b0}}; // init to zero
+		    flags <= {(MAX_DIM*MAX_DIM){1'b0}}; // init to zero
         end
     else if(write_enable_i) // if writing enable pass all bits of Flags in matmul
 		begin
@@ -38,5 +38,6 @@ always @(posedge clk_i or negedge rst_ni) begin: insert
  end
 
          // Output assignment for read data
-assign data_o = write_enable_i ?{(MAX_DIM*MAX_DIM){1'bz}} : {(BUS_WIDTH-MAX_DIM*MAX_DIM){1'b0},flags}; // read the data async
+assign data_o = (write_enable_i == 1'b1) ? {(BUS_WIDTH){1'b0}} : {{(BUS_WIDTH-(MAX_DIM*MAX_DIM)){1'b0}},flags}; // read the data async
+
 endmodule
