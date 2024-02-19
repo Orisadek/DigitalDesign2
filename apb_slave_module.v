@@ -104,7 +104,7 @@ always @(*)	// combinatorical always
 							pready_next  = penable_i ? 1'b1 : 1'b0;  // allow next op
 							next_state   = penable_i ? IDLE : ACCESS_WRITE; // go to idle / stay
 							next_busy    = penable_i ? 1'b0: 1'b1;  //  busy
-							pslverr_next = ~(paddr_i[4:0]==FLAGS || paddr_i[4:0]>=SP) ? 1'b0 : 1'b1; // without an err
+							pslverr_next = ~(paddr_i[4:0] == FLAGS || paddr_i[4:0] == SP) ? 1'b0 : 1'b1; // without an err
 							prdata_next  = {(BUS_WIDTH){1'b0}}; // data 0	
 							address_next = {(ADDR_WIDTH){1'b0}};
 						end // end if
@@ -141,9 +141,9 @@ generate  // grenerate the block
 					begin
 						bus_mem_o[(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <= {(DATA_WIDTH){1'b0}};
 					end
-				else if(pwrite_i && psel_i && pstrb_i[b] && penable_i && ~(paddr_i == FLAGS || paddr_i >= SP) && ~start_bit_i) //if we writing and in strobe and enabled
+				else if(pwrite_i && psel_i && penable_i && ~(paddr_i[4:0] == FLAGS || paddr_i[4:0] >= SP) && ~start_bit_i) //if we writing and in strobe and enabled
 					begin
-						bus_mem_o[(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <= pwdata_i[(b+1)*DATA_WIDTH-1-:DATA_WIDTH]; // write data
+						bus_mem_o[(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <= pstrb_i[b] ? pwdata_i[(b+1)*DATA_WIDTH-1-:DATA_WIDTH] : {(DATA_WIDTH){1'b0}}; // write data
 					end
 			end
     end 

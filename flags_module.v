@@ -41,3 +41,8 @@ always @(posedge clk_i or negedge rst_ni) begin: insert
 assign data_o = (write_enable_i == 1'b1) ? {(BUS_WIDTH){1'b0}} : {{(BUS_WIDTH-(MAX_DIM*MAX_DIM)){1'b0}},flags}; // read the data async
 
 endmodule
+
+/*
+Net 'data_i[63:4]' is unused. - need only MAX_DIM*MAX_DIM
+
+*/

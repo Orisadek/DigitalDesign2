@@ -31,19 +31,8 @@ reg  [$clog2(MAX_DIM)+1:0] index;  // Read and Write Logic
 reg  [$clog2(MAX_DIM)-1:0] addr_r_op;
 wire [$clog2(MAX_DIM)-1:0] addr_w_op;
 wire start_i;
-
-/*
-always @(posedge clk_i)// sensitivity list
-	begin:rst_operand
-		if(~rst_ni) //if we writing and in strobe and enabled
-			begin
-				for(index = 0; index < MAX_DIM ; index = index+1)
-					begin
-						registers[index] <=  {(BUS_WIDTH){1'b0}}; // write data
-					end
-			end
-	end
-	*/			
+reg overflow_bit;
+	
 genvar b; // b variable
 generate  // grenerate the block
     for(b = 0 ; b < MAX_DIM ; b = b+1) // for loop
@@ -54,13 +43,12 @@ generate  // grenerate the block
 					begin
 					for(index = 0; index < MAX_DIM ; index = index[$clog2(MAX_DIM):0]+1)
 						begin
-						  registers[index][(b+1)*DATA_WIDTH-1:b*DATA_WIDTH] <=  {(DATA_WIDTH){1'b0}}; // write data
+						  registers[index][(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <=  {(DATA_WIDTH){1'b0}}; // write data
 						end
 					end	
-				 else
-				 if(write_enable_i && strobe_i[b]) //if we writing and in strobe and enabled
+				 else if(write_enable_i) //if we writing and in strobe and enabled
 					begin
-						registers[address_i][(b+1)*DATA_WIDTH-1:b*DATA_WIDTH] <= data_i[(b+1)*DATA_WIDTH-1:b*DATA_WIDTH]; // write data
+						registers[address_i][(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <= strobe_i[b] ? data_i[(b+1)*DATA_WIDTH-1-:DATA_WIDTH] : {(DATA_WIDTH){1'b0}}; // write data
 					end
 				end
 		end 
@@ -70,12 +58,13 @@ always@(posedge clk_i or negedge rst_ni)
 	begin:send_address_a_b		
 		if(~rst_ni)
 			begin
-				addr_r_op <= {($clog2(MAX_DIM)){1'b0};
+				addr_r_op <= {($clog2(MAX_DIM)){1'b0}};
+				overflow_bit <= 1'b0;
 			end
 		else
 			begin
 				if(start_i) addr_r_op <= address_op_i;
-				else addr_r_op <= addr_r_op + 1;		
+				else {overflow_bit,addr_r_op} <= addr_r_op + 1;		
 			end
 	end
 assign addr_w_op = addr_r_op;
@@ -83,3 +72,7 @@ assign addr_w_op = addr_r_op;
 assign data_o    = (write_enable_i == 1'b0) ? registers[address_i] : {(BUS_WIDTH){1'b0}}; // read the data async
 assign data_op_o = (write_enable_i == 1'b0) ? registers[addr_w_op] : {(BUS_WIDTH){1'b0}}; // read the data async
 endmodule
+
+/*
+overflow_bit not used - bit used for acc only
+*/
