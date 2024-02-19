@@ -33,7 +33,7 @@ wire write_enable_i; //enabler to write the data
 wire clk_i,rst_ni; // clk and rst
 reg  [BUS_WIDTH-1:0] mem [SP_NTARGETS*MAX_DIM*MAX_DIM-1:0]; // where we keep the resulte matries. 
 reg  [$clog2(MAX_DIM*MAX_DIM*SP_NTARGETS)+1:0]index_insert_sp;
-reg overflow;
+
 
 always @(posedge clk_i or negedge rst_ni) 
 	begin: writing_to_sp // we want it to activate during clk or rst
@@ -57,3 +57,4 @@ assign data_sp_o = (write_enable_i == 1'b0 && mode_i) ? mem[read_target_i*MAX_DI
 
 
 endmodule
+
