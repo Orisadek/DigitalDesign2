@@ -18,9 +18,9 @@ package matmul_calc_pkg;
   parameter int unsigned K = 2; // the colms of matrix A and the Rows of matrix B
   parameter int unsigned M = 1; // the colms of matrix B
   
-  typedef logic [DATA_WIDTH-1:0] matA [N-1:0][K-1:0];
-  typedef logic [DATA_WIDTH-1:0] matB [K-1:0][M-1:0];
-  typedef logic [BUS_WIDTH-1:0]  matc [N-1:0][K-1:0];
+  typedef logic [DATA_WIDTH-1:0] matA [MAX_DIM-1:0][MAX_DIM-1:0];
+  typedef logic [DATA_WIDTH-1:0] matB [MAX_DIM-1:0][MAX_DIM-1:0];
+  typedef logic [BUS_WIDTH-1:0]  matc [MAX_DIM-1:0][MAX_DIM-1:0];
   
   
 	// TB Params

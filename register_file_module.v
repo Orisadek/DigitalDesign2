@@ -29,11 +29,11 @@ parameter  SP_NTARGETS = 4; //The number of addressable targets in sp
 
 localparam CONTROL_WIDTH = 16;
 localparam MAX_DIM = (BUS_WIDTH / DATA_WIDTH); // max dim matrix
-localparam [4:0] CONTROL    = 5'b00000, // idle state
-			     OPERAND_A  = 5'b00100, // read state
-			     OPERAND_B  = 5'b01100, // write state
-				 FLAGS		= 5'b01000,
-				 SP 		= 5'b10000;
+localparam [4:0] CONTROL    = 5'b00000, // Control address
+			     OPERAND_A  = 5'b00100, // Operand-A address
+			     OPERAND_B  = 5'b01000, // Operand-B address
+				   FLAGS	    	= 5'b01100, // flags address
+			     SP 		      = 5'b10000; // SP address
 				 
 wire signed [BUS_WIDTH-1:0] dataOpA,dataOpB,dataSp;
 wire [BUS_WIDTH-1:0] dataFlags;

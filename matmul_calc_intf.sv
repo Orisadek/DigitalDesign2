@@ -1,23 +1,11 @@
 interface matmul_calc_intf(input logic clk, input logic rst_ni);
 	import matmul_calc_pkg::*;
-  
-  logic enable;
-
-  
-  matA matrix_A;
-  matB matrix_B;
-	matC matrix_C; 
-  
 
 
 
-
-
-
-	
-	modport DEVICE(output ena, im_pixel, w_pixel, param, input clk, rst);
-	modport STIMULUS(output enable, matrixC input clk, rst_ni, N, K, M);
-	modport CHECKCOV(output ena, im_pixel, w_pixel, param, input clk, rst);
+	//modport DEVICE  (input clk_i,rst_ni,psel_i,penable_i,pwrite_i,pstrb_i,pwdata_i,paddr_i,output pready_o,pslverr_o,prdata_o,busy_o);
+	modport STIMULUS(output clk_i,rst_ni,psel_i,penable_i,pwrite_i,pstrb_i,pwdata_i,paddr_i,input pready_o,pslverr_o,prdata_o,busy_o);
+	modport CHECKCOV(input  clk_i,rst_ni,psel_i,penable_i,pwrite_i,pstrb_i,pwdata_i,paddr_i,output pready_o,pslverr_o,prdata_o,busy_o);
   
 endinterface
 

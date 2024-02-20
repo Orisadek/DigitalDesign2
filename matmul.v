@@ -40,7 +40,7 @@ wire [BUS_WIDTH-1:0] writeDataApb,writeDataMatmul;
 wire writeEnable;
 assign addressMem   = startBit ? addressMatmul : addressApb;
 assign writeDataMem = startBit ? writeDataMatmul : writeDataApb;
-assign writeEnable  =  startBit ? pwrite_i : 1'b0;
+assign writeEnable  = startBit ? pwrite_i : 1'b0;
 
 matmul_calc_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR_WIDTH)) U_matmul_calc(
 .clk_i(clk_i),
