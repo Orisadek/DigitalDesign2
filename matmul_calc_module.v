@@ -11,18 +11,19 @@
 `resetall
 `timescale 1ns/10ps
 
-module matmul_calc_module(clk_i,rst_ni,n_dim_i,k_dim_i,m_dim_i
-,start_i,data_a_i,data_b_i,data_c_i,mode_i,
-data_o,address_o,address_a_o,address_b_o,
-address_c_o,flags_o,finish_mul_o,enable_w_o);
+module matmul_calc_module(clk_i,rst_ni,n_dim_i,k_dim_i,m_dim_i,data_i
+,start_i,mode_i,finished_a_i,finished_b_i,finished_c_i,
+data_o,address_o,flags_o,finish_mul_o,enable_w_o,get_matA_o,get_matB_o,get_matC_o);
 //-------------------ports----------------------------------------------//
 input  clk_i,rst_ni,start_i,mode_i; // clock , reset , start bit from control , mode bit : if to add prev c
 input  n_dim_i,k_dim_i,m_dim_i; // matrix A is NxK , matrix B KxM
-input  data_c_i,data_b_i,data_a_i;
+input  data_i;
+input  finished_a_i,finished_b_i,finished_c_i;
 output finish_mul_o,enable_w_o; // output matrix is actually long matrix 
 output data_o;
-output address_o,address_a_o,address_b_o,address_c_o;
+output address_o;
 output flags_o;
+output get_matA_o,get_matB_o,get_matC_o;
 //-----------------parameters-----------------------------------------
 parameter DATA_WIDTH = 8; // data width
 parameter BUS_WIDTH = 16; // bus width
@@ -34,6 +35,7 @@ localparam  [4:0]   OPERAND_A = 5'b00100,
 //-----------------variables------------------------------------------
 wire clk_i,rst_ni,start_i,mode_i;// clock , reset , start bit from control
 wire [1:0] n_dim_i,k_dim_i,m_dim_i; // matrix A is NxK , matrix B KxM
+wire signed [BUS_WIDTH-1:0] data_i;
 wire signed [(MAX_DIM*MAX_DIM*DATA_WIDTH)-1:0] a_matrix; // this matrix is actually  long register
 reg signed [(MAX_DIM*MAX_DIM*DATA_WIDTH)-1:0] a_matrix_local; // this matrix is actually  long register
 wire signed [(MAX_DIM*MAX_DIM*DATA_WIDTH)-1:0] b_matrix; // this matrix is actually  long register
@@ -43,9 +45,7 @@ reg [2*$clog2(MAX_DIM)-1:0] addr_log_c;
 wire signed [(MAX_DIM*MAX_DIM*BUS_WIDTH)-1:0] c_bias; // output matrix is actually long matrix
 reg  signed [(MAX_DIM*MAX_DIM*BUS_WIDTH)-1:0] c_bias_local; // output matrix is actually long matrix
 wire [(MAX_DIM*MAX_DIM) -1:0]  flags_local; // flags for overflow
-wire signed [BUS_WIDTH-1:0] data_a_i,data_b_i,data_c_i;
 reg [ADDR_WIDTH-1:0] address_o;
-wire [ADDR_WIDTH-1:0]  address_a_o,address_b_o,address_c_o;
 reg signed [BUS_WIDTH-1:0] data_o;
 reg enable_w_o;
 reg finish_mul_o; // signals to enable write to sp and assert we ended the matmul
@@ -53,9 +53,12 @@ wire finishMulWire;
 reg  finishWrite; // local variable for finishMulWire from the inside module
 wire signed [(MAX_DIM*MAX_DIM*BUS_WIDTH)-1:0] cMatrixWire,cMatrixWireBias; // output matrix is actually long matrix
 wire [BUS_WIDTH-1:0] flags_o;
-reg [2*$clog2(MAX_DIM)-1:0] index_byte;
-reg overflow_bit,overflow_a_b_bit,overflow_c_bit;
-
+reg [2*$clog2(MAX_DIM)-1:0] index_byte,index_mat_c;
+reg overflowBit,overflowABbit,overflowCbit;
+reg up;
+reg get_matA_o,get_matB_o,get_matC_o;
+wire finished_a_i,finished_b_i,finished_c_i;
+wire startBit;
 //-----------------------------matmul unit-----------------------------------//
 matrix_multiple_module #(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH)) U_matmul(
    .clk_i      (clk_i), // clk
@@ -63,7 +66,7 @@ matrix_multiple_module #(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH)) U_matmul
    .n_dim_i    (n_dim_i), // n dim of the matrix
    .k_dim_i    (k_dim_i), // k dim of the matrix
    .m_dim_i    (m_dim_i), // m dim of the matrix
-   .start_i    (start_i), // start bit from the control
+   .start_i    (startBit), // start bit from the control
    .a_matrix_i (a_matrix), // matrix a as long vector - input
    .b_matrix_i (b_matrix), // matrix b as long vector - input
    .c_matrix_o (cMatrixWire), // // matrix c as long vector - output
@@ -71,15 +74,87 @@ matrix_multiple_module #(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH)) U_matmul
    .finish_mul_o (finishMulWire), // write to start to de assert
    .finish_write_i(finishWrite)
 ); 
+
+
+
+always@(posedge clk_i or negedge rst_ni)
+	begin:get_data_matrices
+		if(~rst_ni)
+			begin
+				up <= 1'b0;
+			end
+		else
+			begin
+				if(start_i)
+					begin
+						if(~finished_a_i && ~finished_b_i && ~finished_c_i)
+							begin
+								address_o[4:0] <= OPERAND_A; //change
+								get_matA_o <= 1'b1;
+								if(up)
+									begin
+								a_matrix_local[((addr_log+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_i;
+								if(addr_log == MAX_DIM-1)
+									begin
+										get_matA_o     <= 1'b0;
+										address_o[4:0] <= OPERAND_B;
+										get_matB_o      <= 1'b1;
+										addr_log       <= 1'b0;
+									end
+								else
+									begin
+										addr_log <= addr_log + 1;
+									end
+								end
+								else up <= 1'b1
+						end
+						else if(finished_a_i && ~finished_b_i && ~finished_c_i)
+							begin
+								b_matrix_local[((addr_log+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_i;
+									if(addr_log == MAX_DIM-1)
+										begin
+											get_matC_o <= 1;
+											get_matB_o <= 0;
+											address_o[4:0] <= OPERAND_C;
+										end
+									else
+										begin
+											addr_log <= addr_log +1;
+										end
+							end
+						else if(finished_a_i && finished_b_i && ~finished_c_i)
+							begin
+								c_bias_local[((index_mat_c+1)*BUS_WIDTH-1)-:BUS_WIDTH] <= data_i;
+								if(index_mat_c == MAX_DIM*MAX_DIM-1)
+										begin
+											get_matC_o <= 1'b0;
+											up <=1'b0;
+											startBit <= 1'b1;
+										end
+									else
+										begin
+											index_mat_c <= index_mat_c +1;
+										end
+							end
+					end
+					else
+						begin
+							startBit <= 1'b0;
+						end
+						
+			end
+	end
+	
 //---------------------------get a,b matrices----------------------------------//
-genvar index_mat,index_mat_c; // b variable
+
+genvar index_mat,index_mat_c_gen; // b variable
 generate  // grenerate the block
-		assign address_a_o[4:0] = OPERAND_A;
-		assign address_a_o[5+$clog2(MAX_DIM)-1:5] = {($clog2(MAX_DIM)){1'b0}};
-		assign address_b_o[4:0] = OPERAND_B;
-		assign address_b_o[5+$clog2(MAX_DIM)-1:5] = {($clog2(MAX_DIM)){1'b0}};
-		assign address_b_o[ADDR_WIDTH-1:5+$clog2(MAX_DIM)] = 0;
-		assign address_a_o[ADDR_WIDTH-1:5+$clog2(MAX_DIM)] = 0;
+		//assign address_a_o[4:0] = OPERAND_A;
+		//assign address_a_o[5+$clog2(MAX_DIM)-1:5] = {($clog2(MAX_DIM)){1'b0}};
+		//assign address_b_o[4:0] = OPERAND_B;
+		//assign address_b_o[5+$clog2(MAX_DIM)-1:5] = {($clog2(MAX_DIM)){1'b0}};
+		//assign address_b_o[ADDR_WIDTH-1:5+$clog2(MAX_DIM)] = 0;
+		//assign address_a_o[ADDR_WIDTH-1:5+$clog2(MAX_DIM)] = 0;
 	for(index_mat = 0;index_mat < MAX_DIM;index_mat = index_mat+1)
 		begin
 			assign a_matrix[(index_mat+1)*BUS_WIDTH-1-:BUS_WIDTH] = a_matrix_local[(index_mat+1)*BUS_WIDTH-1-:BUS_WIDTH];
@@ -87,7 +162,7 @@ generate  // grenerate the block
 		end
 endgenerate
 
-
+/*
 always@(posedge clk_i or negedge rst_ni)
 	begin:get_data_a_b
 		if(~rst_ni)
@@ -99,39 +174,42 @@ always@(posedge clk_i or negedge rst_ni)
 			end
 		else
 			begin
-				a_matrix_local[(addr_log+1)*MAX_DIM*DATA_WIDTH-1-:BUS_WIDTH] <= data_a_i;
-				b_matrix_local[(addr_log+1)*MAX_DIM*DATA_WIDTH-1-:BUS_WIDTH] <= data_b_i;
+				a_matrix_local[((addr_log+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_a_i;
+				b_matrix_local[((addr_log+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_b_i;
 				if(addr_log == MAX_DIM-1) addr_log <= {($clog2(MAX_DIM)){1'b0}};
-				else {overflow_a_b_bit,addr_log} <= addr_log + 1;	
+				else {overflowABbit,addr_log} <= addr_log + 1;	
 					
 			end
 	end
+	*/
 //---------------------------get c bias----------------------------------//
 generate  // grenerate the block
-	for(index_mat_c = 0;index_mat_c < MAX_DIM*MAX_DIM;index_mat_c = index_mat_c + 1)
+	for(index_mat_c_gen = 0;index_mat_c_gen < MAX_DIM*MAX_DIM;index_mat_c_gen = index_mat_c_gen + 1)
 		begin
-			assign address_c_o[4:0] = OPERAND_C;
-			assign address_c_o[5+2*$clog2(MAX_DIM)-1:5] = 0;
-			assign address_c_o[ADDR_WIDTH-1:5+2*$clog2(MAX_DIM)] = 0;
-			assign c_bias[(index_mat_c+1)*BUS_WIDTH-1-:BUS_WIDTH] = c_bias_local[(index_mat_c+1)*BUS_WIDTH-1-:BUS_WIDTH];
+			//assign address_c_o[4:0] = OPERAND_C;
+			//assign address_c_o[5+2*$clog2(MAX_DIM)-1:5] = 0;
+			//assign address_c_o[ADDR_WIDTH-1:5+2*$clog2(MAX_DIM)] = 0;
+			assign c_bias[((index_mat_c_gen+1)*BUS_WIDTH-1)-:BUS_WIDTH] = c_bias_local[((index_mat_c_gen+1)*BUS_WIDTH-1)-:BUS_WIDTH];
 		end
 endgenerate
 
+/*
 always@(posedge clk_i or negedge rst_ni)
 	begin:get_data_c
 		if(~rst_ni)
 			begin
 				c_bias_local <= 0;
 				addr_log_c   <= 0;
-				overflow_c_bit <= 0;
+				overflowCbit <= 0;
 			end
 		else
 			begin
 				c_bias_local[(addr_log_c+1)*BUS_WIDTH-1-:BUS_WIDTH] <= mode_i ? data_c_i : {(BUS_WIDTH){1'b0}};
 				if(addr_log_c == MAX_DIM*MAX_DIM-1) addr_log_c <= 0;
-				else {overflow_c_bit,addr_log_c} <= addr_log_c + 1;
+				else {overflowCbit,addr_log_c} <= addr_log_c + 1;
 			end
 	end
+	*/
 //--------------------------write data---------------------------------//
 
 always @(posedge clk_i or negedge rst_ni)// sensitivity list
@@ -150,9 +228,9 @@ always @(posedge clk_i or negedge rst_ni)// sensitivity list
 			begin
 				address_o[4:0] 				       <= OPERAND_C;
 				address_o[5+2*$clog2(MAX_DIM)-1:5] <= index_byte;
-				data_o     						<= cMatrixWireBias[BUS_WIDTH*(index_byte+1)-1-:BUS_WIDTH];
-				enable_w_o 						<= 1'b1;
-				{overflow_bit,index_byte} <= index_byte + 1;
+				data_o     						   <= cMatrixWireBias[BUS_WIDTH*(index_byte+1)-1-:BUS_WIDTH];
+				enable_w_o 						   <= 1'b1;
+				{overflowBit,index_byte} <= index_byte + 1;
 			end
 		else if(finishMulWire && index_byte == MAX_DIM*MAX_DIM)
 			begin

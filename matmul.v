@@ -38,9 +38,12 @@ wire [ADDR_WIDTH-1:0] addressReadA,addressReadB,addressReadC;
 wire [BUS_WIDTH-1:0] readDataMem,writeDataMem;
 wire [BUS_WIDTH-1:0] writeDataApb,writeDataMatmul;
 wire writeEnable;
+wire finishedA,finishedB,finishedC;
+wire startA,startB,startC;
 assign addressMem   = startBit ? addressMatmul : addressApb;
 assign writeDataMem = startBit ? writeDataMatmul : writeDataApb;
 assign writeEnable  = startBit ? pwrite_i : 1'b0;
+
 
 matmul_calc_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR_WIDTH)) U_matmul_calc(
 .clk_i(clk_i),
@@ -48,19 +51,20 @@ matmul_calc_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(AD
 .n_dim_i(nDim),
 .k_dim_i(kDim),
 .m_dim_i(mDim),
+.data_i(readDataMem),
 .start_i(startBit),
-.data_a_i(matA),
-.data_b_i(matB),
-.data_c_i(matC),
 .mode_i(modeBit),
+.finished_a_i(finishedA),
+.finished_b_i(finishedB),
+.finished_c_i(finishedC),
 .data_o(writeDataMatmul),
 .address_o(addressMatmul),
-.address_a_o(addressReadA),
-.address_b_o(addressReadB),
-.address_c_o(addressReadC),
 .flags_o(flagsData),
 .finish_mul_o(finishMul),
-.enable_w_o(enableWriteSp)
+.enable_w_o(enableWriteSp),
+.get_matA_o(startA),
+.get_matB_o(startB),
+.get_matC_o(startC)
 );
 
 apb_slave_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR_WIDTH)) U_apb(
@@ -82,6 +86,8 @@ apb_slave_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR
 .bus_mem_o(writeDataApb)
 );
 
+
+
 register_file_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR_WIDTH),.SP_NTARGETS(SP_NTARGETS)) U_register_file(
 .clk_i(clk_i),
 .rst_ni(rst_ni),
@@ -91,9 +97,9 @@ register_file_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(
 .write_enable_i(writeEnable),
 .strobe_i(pstrb_i),
 .sp_enable_i(enableWriteSp),
-.address_a_i(addressReadA),
-.address_b_i(addressReadB),
-.address_c_i(addressReadC),
+.start_send_a_i(startA),
+.start_send_b_i(startB),
+.start_send_c_i(startC),
 .start_bit_i(finishMul),
 .n_dim_o(nDim),
 .k_dim_o(kDim),
@@ -101,8 +107,8 @@ register_file_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(
 .mode_bit_o(modeBit),
 .start_bit_o(startBit),
 .data_o(readDataMem),
-.a_mat_o(matA),
-.b_mat_o(matB),
-.c_mat_o(matC)
+.finish_send_a_o(finishedA),
+.finish_send_b_o(finishedB),
+.finish_send_c_o(finishedC)
 );
 endmodule
