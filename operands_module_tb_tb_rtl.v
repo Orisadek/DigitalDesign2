@@ -23,16 +23,21 @@ wire clk_i;
 wire rst_ni;
 wire write_enable_i;
 wire [ADDR_WIDTH-1:0] address_i; // adress of writing (for line/col)
-wire [BUS_WIDTH-1:0] write_data_i; //the data we ant to write
-wire [BUS_WIDTH-1:0] read_data_o; // the data we read (line/col)
+wire [BUS_WIDTH-1:0] data_i; //the data we ant to write
+wire [BUS_WIDTH-1:0] data_o; // the data we read (line/col)
+wire  [MAX_DIM-1:0]strobe_i;
+wire start_send_i,finish_send_o;
 
 operands_module #(32,64,32) U_0(
    .clk_i          (clk_i),
    .rst_ni         (rst_ni),
    .write_enable_i (write_enable_i),
    .address_i      (address_i),
-   .write_data_i   (write_data_i),
-   .read_data_o    (read_data_o)
+   .data_i         (data_i),
+   .strobe_i       (strobe_i),
+   .start_send_i   (start_send_i),
+   .data_o         (data_o),
+   .finish_send_o  (finish_send_o)
 );
 
 operands_module_tester #(32,64,32) U_1(
@@ -40,8 +45,11 @@ operands_module_tester #(32,64,32) U_1(
    .rst_ni         (rst_ni),
    .write_enable_i (write_enable_i),
    .address_i      (address_i),
-   .write_data_i   (write_data_i),
-   .read_data_o    (read_data_o)
+   .data_i         (data_i),
+   .strobe_i       (strobe_i),
+   .start_send_i   (start_send_i),
+   .data_o         (data_o),
+   .finish_send_o  (finish_send_o)
 );
 
 endmodule // operands_module_tb

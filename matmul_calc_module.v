@@ -81,7 +81,12 @@ always@(posedge clk_i or negedge rst_ni)
 	begin:get_data_matrices
 		if(~rst_ni)
 			begin
-				up <= 1'b0;
+				up          <= 1'b0;
+				get_matA_o  <= 1'b0;
+				get_matB_o  <= 1'b0;
+				get_matC_o  <= 1'b0;
+				addr_log    <= 0;
+				index_mat_c <= 0;
 			end
 		else
 			begin
@@ -99,7 +104,7 @@ always@(posedge clk_i or negedge rst_ni)
 										get_matA_o     <= 1'b0;
 										address_o[4:0] <= OPERAND_B;
 										get_matB_o      <= 1'b1;
-										addr_log       <= 1'b0;
+										addr_log        <= 0;
 									end
 								else
 									begin
@@ -113,8 +118,8 @@ always@(posedge clk_i or negedge rst_ni)
 								b_matrix_local[((addr_log+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_i;
 									if(addr_log == MAX_DIM-1)
 										begin
-											get_matC_o <= 1;
-											get_matB_o <= 0;
+											get_matC_o <= 1'b1;
+											get_matB_o <= 1'b0;
 											address_o[4:0] <= OPERAND_C;
 										end
 									else
@@ -128,7 +133,7 @@ always@(posedge clk_i or negedge rst_ni)
 								if(index_mat_c == MAX_DIM*MAX_DIM-1)
 										begin
 											get_matC_o <= 1'b0;
-											up <=1'b0;
+											up <= 1'b0;
 											startBit <= 1'b1;
 										end
 									else
@@ -149,12 +154,7 @@ always@(posedge clk_i or negedge rst_ni)
 
 genvar index_mat,index_mat_c_gen; // b variable
 generate  // grenerate the block
-		//assign address_a_o[4:0] = OPERAND_A;
-		//assign address_a_o[5+$clog2(MAX_DIM)-1:5] = {($clog2(MAX_DIM)){1'b0}};
-		//assign address_b_o[4:0] = OPERAND_B;
-		//assign address_b_o[5+$clog2(MAX_DIM)-1:5] = {($clog2(MAX_DIM)){1'b0}};
-		//assign address_b_o[ADDR_WIDTH-1:5+$clog2(MAX_DIM)] = 0;
-		//assign address_a_o[ADDR_WIDTH-1:5+$clog2(MAX_DIM)] = 0;
+		
 	for(index_mat = 0;index_mat < MAX_DIM;index_mat = index_mat+1)
 		begin
 			assign a_matrix[(index_mat+1)*BUS_WIDTH-1-:BUS_WIDTH] = a_matrix_local[(index_mat+1)*BUS_WIDTH-1-:BUS_WIDTH];
@@ -162,54 +162,14 @@ generate  // grenerate the block
 		end
 endgenerate
 
-/*
-always@(posedge clk_i or negedge rst_ni)
-	begin:get_data_a_b
-		if(~rst_ni)
-			begin
-				a_matrix_local   <= 0;
-				b_matrix_local   <= 0;
-				addr_log 		 <= 0;
-				overflow_a_b_bit <= 0;
-			end
-		else
-			begin
-				a_matrix_local[((addr_log+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_a_i;
-				b_matrix_local[((addr_log+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_b_i;
-				if(addr_log == MAX_DIM-1) addr_log <= {($clog2(MAX_DIM)){1'b0}};
-				else {overflowABbit,addr_log} <= addr_log + 1;	
-					
-			end
-	end
-	*/
 //---------------------------get c bias----------------------------------//
 generate  // grenerate the block
 	for(index_mat_c_gen = 0;index_mat_c_gen < MAX_DIM*MAX_DIM;index_mat_c_gen = index_mat_c_gen + 1)
 		begin
-			//assign address_c_o[4:0] = OPERAND_C;
-			//assign address_c_o[5+2*$clog2(MAX_DIM)-1:5] = 0;
-			//assign address_c_o[ADDR_WIDTH-1:5+2*$clog2(MAX_DIM)] = 0;
 			assign c_bias[((index_mat_c_gen+1)*BUS_WIDTH-1)-:BUS_WIDTH] = c_bias_local[((index_mat_c_gen+1)*BUS_WIDTH-1)-:BUS_WIDTH];
 		end
 endgenerate
 
-/*
-always@(posedge clk_i or negedge rst_ni)
-	begin:get_data_c
-		if(~rst_ni)
-			begin
-				c_bias_local <= 0;
-				addr_log_c   <= 0;
-				overflowCbit <= 0;
-			end
-		else
-			begin
-				c_bias_local[(addr_log_c+1)*BUS_WIDTH-1-:BUS_WIDTH] <= mode_i ? data_c_i : {(BUS_WIDTH){1'b0}};
-				if(addr_log_c == MAX_DIM*MAX_DIM-1) addr_log_c <= 0;
-				else {overflowCbit,addr_log_c} <= addr_log_c + 1;
-			end
-	end
-	*/
 //--------------------------write data---------------------------------//
 
 always @(posedge clk_i or negedge rst_ni)// sensitivity list

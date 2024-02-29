@@ -74,6 +74,7 @@ input [BUS_WIDTH-1:0] data_write;
 	begin
 		psel_i    = 1'b1;
 		pwrite_i  = 1'b1;
+		pstrb_i   = 1;
 		#1
 		paddr_i   = addr_write;
 		pwdata_i  = data_write;
@@ -103,10 +104,10 @@ endtask
 
 initial begin
 	wait (rst_ni == 1);
-	do_write(2,12);
+	do_write(4,12);
 	wait (psel_i == 0);
 	#2
-	do_read(2);
+	do_read(4);
 end
 
 

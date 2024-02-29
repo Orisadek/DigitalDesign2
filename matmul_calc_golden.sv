@@ -13,24 +13,9 @@ matA   matrixA;
 matB   matrixB;
 matC   matrixC;
 
-
-
-
-
-
-
-
-
-
 integer out_fd;
 integer out_cnt = 0;
 string  filename;
-
-
-
-
-
-
 
 always @(posedge clk or posedge rst) begin: CHECKER_SP_FF
     if(rst) begin
@@ -49,7 +34,6 @@ always @(posedge clk or posedge rst) begin: CHECKER_SP_FF
 
     end
 end
-
 
 
 task check_golden(input string golden_f_A,golden_f_B,golden_f_C);

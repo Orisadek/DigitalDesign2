@@ -33,8 +33,10 @@ wire busy_o;
 wire [BUS_WIDTH/8-1:0] pstrb_i; //for every byte there is a Pstrb[n]
 wire [BUS_WIDTH-1:0] pwdata_i;
 wire [ADDR_WIDTH-1:0] paddr_i;
-wire  [BUS_WIDTH-1:0] prdata_o;
- 
+wire [BUS_WIDTH-1:0] prdata_o;
+wire [BUS_WIDTH-1:0] bus_mem_i,bus_mem_o;
+wire start_bit_i;
+wire [ADDR_WIDTH-1:0] address_o;
 
 apb_slave_module #(32,64,32,2'b00,2'b01,2'b10) U_0(
    .clk_i     (clk_i),
@@ -45,14 +47,18 @@ apb_slave_module #(32,64,32,2'b00,2'b01,2'b10) U_0(
    .pstrb_i   (pstrb_i),
    .pwdata_i  (pwdata_i),
    .paddr_i   (paddr_i),
+   .bus_mem_i (bus_mem_i),
+   .start_bit_i (start_bit_i),
+   .address_o (address_o),
    .pready_o  (pready_o),
    .pslverr_o (pslverr_o),
    .prdata_o  (prdata_o),
-   .busy_o    (busy_o)
+   .busy_o    (busy_o),
+   .bus_mem_o (bus_mem_o)
 );
 
 apb_slave_module_tester #(32,64,32) U_1(
-   .clk_i     (clk_i),
+    .clk_i    (clk_i),
    .rst_ni    (rst_ni),
    .psel_i    (psel_i),
    .penable_i (penable_i),
@@ -60,10 +66,14 @@ apb_slave_module_tester #(32,64,32) U_1(
    .pstrb_i   (pstrb_i),
    .pwdata_i  (pwdata_i),
    .paddr_i   (paddr_i),
+   .bus_mem_i (bus_mem_i),
+   .start_bit_i (start_bit_i),
+   .address_o (address_o),
    .pready_o  (pready_o),
    .pslverr_o (pslverr_o),
    .prdata_o  (prdata_o),
-   .busy_o    (busy_o)
+   .busy_o    (busy_o),
+   .bus_mem_o (bus_mem_o)
 );
 
 endmodule // apb_slave_module_tb

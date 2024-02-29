@@ -13,10 +13,12 @@ module operands_module_tester (clk_i,
                                rst_ni,
                                write_enable_i,
                                address_i,
-                               write_data_i,
-                               read_data_o
+                               data_i,
+							   strobe_i,
+							   start_send_i,
+                               data_o,
+							   finish_send_o
                               );
-
 // Local declarations
 
 parameter DATA_WIDTH = 32;
@@ -36,8 +38,10 @@ reg  clk_i;
 reg  rst_ni;
 reg  write_enable_i;
 reg  [ADDR_WIDTH-1:0] address_i; // adress of writing (for line/col)
-reg  [BUS_WIDTH-1:0] write_data_i; //the data we ant to write
-wire [BUS_WIDTH-1:0] read_data_o; // the data we read (line/col)
+reg  [BUS_WIDTH-1:0] data_i; //the data we ant to write
+wire [BUS_WIDTH-1:0] data_o; // the data we read (line/col)
+wire [MAX_DIM-1:0] strobe_i;
+wire start_send_i,finish_send_o;
 reg [DATA_WIDTH-1:0] val_a1,val_a2,val_a3,val_a4;
 
 initial begin: setup_clk
@@ -55,7 +59,7 @@ task do_write;
   input [BUS_WIDTH-1:0] data_write;
     begin
       address_i = addr_write;
-      write_data_i = data_write;
+      data_i = data_write;
       write_enable_i = 1'b1;
       #2;
       write_enable_i = 1'b0;

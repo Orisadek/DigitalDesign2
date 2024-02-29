@@ -26,14 +26,13 @@ parameter  DATA_WIDTH = 32; // data width
 parameter  BUS_WIDTH = 64; // bus width
 parameter  ADDR_WIDTH = 32; // addr width
 parameter  SP_NTARGETS = 4; //The number of addressable targets in sp
-
 localparam CONTROL_WIDTH = 16;
 localparam MAX_DIM = (BUS_WIDTH / DATA_WIDTH); // max dim matrix
 localparam [4:0] CONTROL    = 5'b00000, // Control address
 			     OPERAND_A  = 5'b00100, // Operand-A address
 			     OPERAND_B  = 5'b01000, // Operand-B address
-				 FLAGS	    	= 5'b01100, // flags address
-			     SP 		      = 5'b10000; // SP address
+				 FLAGS	    = 5'b01100, // flags address
+			     SP 		= 5'b10000; // SP address
 
 wire start_send_a_i,start_send_b_i,start_send_c_i;				 
 wire signed [BUS_WIDTH-1:0] dataOpA,dataOpB,dataSp;
