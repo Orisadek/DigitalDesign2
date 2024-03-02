@@ -1,4 +1,4 @@
-interface matmul_calc_intf(input logic clk, input logic rst_ni);
+interface matmul_intf(input logic clk, input logic rst_ni);
 	import matmul_calc_pkg::*;
     logic psel_i,
 	logic penable_i,

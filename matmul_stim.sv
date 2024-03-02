@@ -10,7 +10,7 @@
 
 `resetall
 `timescale 1ns/10ps
-module matmul_calc_stim #(
+module matmul_stim #(
     parameter string matrixA_File = "",
     parameter string matrixB_File = "",
     parameter string matrixC_File = "",
@@ -21,7 +21,7 @@ module matmul_calc_stim #(
 			         SP 		= 5'b10000 // SP address
 
 ) (
-    matmul_calc_intf.STIMULUS    intf,
+    matmul_intf.STIMULUS    intf,
     output logic matrix_done_o,
     output logic stim_done_o
 );
@@ -144,21 +144,19 @@ task apb_write_control; begin
 	pwrite_o     = 1'b0;  
 end endtask
 
-task apb_write; begin
-	input [4:0] module_mem;
-	input [5+:$clog2(MAX_DIM)] line;
-	input [BUS_WIDTH-1:0] data;
-    psel_o       = 1'b1;
-	pwrite_o     = 1'b1;
-	paddr_o[4:0] = module_mem; 
-	paddr_o[5+:$clog2(MAX_DIM)] = line;
-	pwdata_o = data;
-	#1
-	penable_o    = 1'b1;
-	pstrb_o      = 
-	#2
-	psel_o       = 1'b0;
-	pwrite_o     = 1'b0;  
+task apb_write(input bit  [4:0] module_mem,input bit  [5+:$clog2(MAX_DIM)] line,input bit [BUS_WIDTH-1:0] data);
+	begin
+		psel_o       = 1'b1;
+		pwrite_o     = 1'b1;
+		paddr_o[4:0] = module_mem; 
+		paddr_o[5+:$clog2(MAX_DIM)] = line;
+		pwdata_o = data;
+		#1
+		penable_o    = 1'b1;
+		pstrb_o      = 
+		#2
+		psel_o       = 1'b0;
+		pwrite_o     = 1'b0;  
 end endtask
 
 initial begin : APB_MASTER
@@ -196,8 +194,8 @@ end
 				apb_write(OPERAND_B,i,col_data_o)
             end
             set_data(1'b0);
-            img_done_o = 1'b1;
-            @(posedge clk) img_done_o = 1'b0;
+         //   img_done_o = 1'b1;
+         //   @(posedge clk) img_done_o = 1'b0;
         end
  end
 

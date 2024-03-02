@@ -1,13 +1,13 @@
 `include "headers.vh"
 
-module matmul_calc_golden #(
+module matmul_golden #(
     parameter string        GOLDENFILE = "",
     parameter string        OUTFILE = "" // Expected with no type (.raw added here)
 )();
 
     // Only samples the bus -> uses the same type of interface as checker/coverage
 
-import matmul_calc_pkg::matA,matB,matC,N,M,K; //IMPORT THE SIZES OF N,M,K AND THE MATRICES TYPES matA/B/C which are array of N by K / K by M / N x M arrays, where each element is a vector of width DATA_WIDTH
+import matmul_pkg::matA,matB,matC,N,M,K; //IMPORT THE SIZES OF N,M,K AND THE MATRICES TYPES matA/B/C which are array of N by K / K by M / N x M arrays, where each element is a vector of width DATA_WIDTH
 
 matA   matrixA;
 matB   matrixB;
@@ -86,11 +86,6 @@ begin
 	if(glog != 0) $fclose(glog);
 end
 endtask
-
-
-
-
-
 
 initial begin: INIT_GOLDEN
     if(OUTFILE == "") //if there is no OUTFILE show fatal Error

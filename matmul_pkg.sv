@@ -8,7 +8,7 @@
 // using Mentor Graphics HDL Designer(TM) 2019.2 (Build 5)
 //
 
-package matmul_calc_pkg;
+package matmul_pkg;
 	// DUT Params
   parameter int unsigned DATA_WIDTH = 32; // data width
   parameter int unsigned BUS_WIDTH = 64; // bus width
