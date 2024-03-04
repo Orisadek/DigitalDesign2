@@ -38,6 +38,7 @@ reg wEnMatA,wEnMatB,wEnCtrl;
 wire [BUS_WIDTH-1:0] data_flags_i,data_i;
 wire [ADDR_WIDTH-1:0] address_i;
 wire [MAX_DIM-1:0] strobe_i;
+reg  [MAX_DIM-1:0] strobeOpA,strobeOpB;
 wire start_bit_i,sp_enable_i,write_enable_i,rst_ni,clk_i;
 wire [1:0] writeTarget,readTarget;
 wire [1:0] n_dim_o,k_dim_o,m_dim_o;
@@ -57,6 +58,8 @@ begin:begin_switch_case
 				wEnCtrl = write_enable_i ? 1'b1 : 1'b0;
 				wEnMatA = 0;
 				wEnMatB = 0;
+				strobeOpA = 0;
+				strobeOpB = 0; 
 			end
 		OPERAND_A: // operand A
 			begin
@@ -64,6 +67,8 @@ begin:begin_switch_case
 				wEnMatA = write_enable_i ? 1'b1 : 1'b0;
 				wEnCtrl = 0;
 				wEnMatB = 0;
+				strobeOpA = strobe_i;
+				strobeOpB = 0;
 			end
 		OPERAND_B: // operand B
 			begin
@@ -71,6 +76,8 @@ begin:begin_switch_case
 				wEnMatB = write_enable_i ? 1'b1 : 1'b0;
 				wEnCtrl = 0;
 				wEnMatA = 0;
+				strobeOpA = 0;
+				strobeOpB = strobe_i; 
 			end
 		FLAGS: // flags
 			begin
@@ -78,6 +85,8 @@ begin:begin_switch_case
 				wEnCtrl = 0;
 				wEnMatA = 0;
 				wEnMatB = 0;
+				strobeOpA = 0;
+				strobeOpB = 0; 
 			end
 		SP: // scrachpad
 			begin
@@ -85,6 +94,8 @@ begin:begin_switch_case
 				wEnCtrl = 0;
 				wEnMatA = 0;
 				wEnMatB = 0;
+				strobeOpA = 0;
+				strobeOpB = 0; 
 			end
 		default:
 				begin
@@ -92,6 +103,8 @@ begin:begin_switch_case
 					wEnCtrl = 0;
 					wEnMatA = 0;
 					wEnMatB = 0;
+					strobeOpA = 0;
+					strobeOpB = 0; 
 				end
 	endcase
 end
@@ -102,7 +115,7 @@ operands_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH)) U_operandA(
 .write_enable_i(wEnMatA),
 .address_i(address_i[5+$clog2(MAX_DIM)-1:5]),
 .data_i(data_i),
-.strobe_i(strobe_i),
+.strobe_i(strobeOpA),
 .start_send_i(start_bit_o), //start_send_i
 .data_o(dataOpA)
 );
@@ -112,7 +125,7 @@ operands_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH)) U_operandB(
 .write_enable_i(wEnMatB),
 .address_i(address_i[5+$clog2(MAX_DIM)-1:5]),
 .data_i(data_i),
-.strobe_i(strobe_i),
+.strobe_i(strobeOpB),
 .start_send_i(start_bit_o), //TODO start_send_i
 .data_o(dataOpB)
 );
