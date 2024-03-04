@@ -11,17 +11,14 @@
 `resetall
 `timescale 1ns/10ps
 module register_file_module(clk_i,rst_ni,address_i,data_i,data_flags_i,
-write_enable_i,strobe_i,sp_enable_i,start_send_a_i,start_send_b_i,
-start_send_c_i,start_bit_i,n_dim_o,k_dim_o,m_dim_o,
-mode_bit_o,start_bit_o,data_o,finish_send_a_o,finish_send_b_o,finish_send_c_o);
+write_enable_i,strobe_i,sp_enable_i,start_bit_i,n_dim_o,k_dim_o,m_dim_o,
+mode_bit_o,start_bit_o,data_o,data_a_o,data_b_o,data_c_o);
 
 input clk_i,rst_ni,address_i;
 input data_i,write_enable_i,data_flags_i,start_bit_i;
 input sp_enable_i,strobe_i;
-input start_send_a_i,start_send_b_i,start_send_c_i;
 output n_dim_o,k_dim_o,m_dim_o;
-output mode_bit_o,start_bit_o,data_o;
-output  finish_send_a_o,finish_send_b_o,finish_send_c_o;
+output mode_bit_o,start_bit_o,data_o,data_a_o,data_b_o,data_c_o;
 parameter  DATA_WIDTH = 32; // data width
 parameter  BUS_WIDTH = 64; // bus width
 parameter  ADDR_WIDTH = 32; // addr width
@@ -34,7 +31,6 @@ localparam [4:0] CONTROL    = 5'b00000, // Control address
 				 FLAGS	    = 5'b01100, // flags address
 			     SP 		= 5'b10000; // SP address
 
-wire start_send_a_i,start_send_b_i,start_send_c_i;				 
 wire signed [BUS_WIDTH-1:0] dataOpA,dataOpB,dataSp;
 wire [BUS_WIDTH-1:0] dataFlags;
 wire [CONTROL_WIDTH-1:0] dataCtrl;
@@ -46,8 +42,11 @@ wire start_bit_i,sp_enable_i,write_enable_i,rst_ni,clk_i;
 wire [1:0] writeTarget,readTarget;
 wire [1:0] n_dim_o,k_dim_o,m_dim_o;
 wire mode_bit_o,start_bit_o;
-reg signed [BUS_WIDTH-1:0] data_o;
-wire finish_send_a_o,finish_send_b_o,finish_send_c_o;
+reg signed [BUS_WIDTH-1:0] data_o,data_a_o,data_b_o,data_c_o;
+
+assign  data_a_o = dataOpA;
+assign  data_b_o = dataOpB;
+assign  data_c_o = dataSp;
 
 always@(*)
 begin:begin_switch_case
@@ -104,9 +103,8 @@ operands_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH)) U_operandA(
 .address_i(address_i[5+$clog2(MAX_DIM)-1:5]),
 .data_i(data_i),
 .strobe_i(strobe_i),
-.start_send_i(start_send_a_i), //start_send_i
-.data_o(dataOpA),
-.finish_send_o(finish_send_a_o)
+.start_send_i(start_bit_o), //start_send_i
+.data_o(dataOpA)
 );
 operands_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH)) U_operandB(
 .clk_i(clk_i),
@@ -115,9 +113,8 @@ operands_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH)) U_operandB(
 .address_i(address_i[5+$clog2(MAX_DIM)-1:5]),
 .data_i(data_i),
 .strobe_i(strobe_i),
-.start_send_i(start_send_b_i), //TODO start_send_i
-.data_o(dataOpB),
-.finish_send_o(finish_send_b_o)
+.start_send_i(start_bit_o), //TODO start_send_i
+.data_o(dataOpB)
 );
 
 flags_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH))U_flags(
@@ -149,13 +146,12 @@ sp_module#(.SP_NTARGETS(SP_NTARGETS),.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDT
 .rst_ni(rst_ni),
 .write_enable_i(sp_enable_i),
 .address_i(address_i[5+2*$clog2(MAX_DIM)-1:5]),
-.start_send_i(start_send_c_i),
+.start_send_i(start_bit_o),
 .mode_i(mode_bit_o),
 .write_target_i(writeTarget),
 .read_target_i(readTarget),
 .data_i(data_i),
-.data_o(dataSp),
-.finish_send_o(finish_send_c_o)
+.data_o(dataSp)
 );
 
 endmodule

@@ -11,10 +11,10 @@
 `resetall
 `timescale 1ns/10ps
 module matrix_multiple_module(clk_i,rst_ni,n_dim_i,k_dim_i,m_dim_i
-,start_i,a_matrix_i,b_matrix_i,finish_write_i,c_matrix_o,flags_o,finish_mul_o);  // inputs
+,start_i,a_matrix_i,b_matrix_i,c_matrix_i,finish_write_i,mode_bit_i,c_matrix_o,flags_o,finish_mul_o);  // inputs
 //-----------------------------ports----------------------------------------------//
-input  clk_i,rst_ni,start_i; // clock , reset , start bit from control
-input  a_matrix_i,b_matrix_i; // the matrices are actually two long registers
+input  clk_i,rst_ni,start_i,mode_bit_i; // clock , reset , start bit from control
+input  a_matrix_i,b_matrix_i,c_matrix_i; // the matrices are actually two long registers
 input  n_dim_i,k_dim_i,m_dim_i,finish_write_i; // matrix A is NxK , matrix B KxM
 output c_matrix_o,flags_o,finish_mul_o; // output matrix is actually long matrix 
 //----------------------------parameters-----------------------------------------//
@@ -23,11 +23,12 @@ parameter BUS_WIDTH = 16; // bus width
 localparam MAX_DIM = BUS_WIDTH/DATA_WIDTH; // max dim of the matrix
 localparam MATRIX_WORD = MAX_DIM*DATA_WIDTH; // matrix word, so we know how to move to the next line
 //----------------------------variables------------------------------------------//
-wire clk_i,rst_ni,start_i;// clock , reset , start bit from control
+wire clk_i,rst_ni,start_i,mode_bit_i;// clock , reset , start bit from control
 wire finish_write_i;
 wire [1:0] n_dim_i,k_dim_i,m_dim_i; // matrix A is NxK , matrix B KxM
 wire signed [(MAX_DIM*MAX_DIM*DATA_WIDTH)-1:0] a_matrix_i; // this matrix is actually  long register
 wire signed [(MAX_DIM*MAX_DIM*DATA_WIDTH)-1:0] b_matrix_i; // this matrix is actually  long register
+wire signed [(MAX_DIM*MAX_DIM*BUS_WIDTH)-1:0] c_matrix_i; // this matrix is actually  long register
 wire  signed [(MAX_DIM*MAX_DIM*(BUS_WIDTH))-1:0] c_matrix_o; // output matrix is actually long matrix
 wire [(MAX_DIM*MAX_DIM) -1:0] flags_o; 					// flags for overflow in pe
 reg finish_mul_o; // write out when finished
@@ -52,10 +53,12 @@ generate
              .rst_ni(rst_ni), // reset
              .a_i(matA[i][j]), // a element in
              .b_i(matB[i][j]), // b element in
+			 .c_i(c_matrix_i[(j*(BUS_WIDTH)*MAX_DIM+(i+1)*(BUS_WIDTH))-1-:BUS_WIDTH]),
              .a_o(matA[i][j+1]), // a element out
              .b_o(matB[i+1][j]), // b element out
              .res_o(matC[i][j]), // result out 
              .start_i(start_i), //start bit from control
+			 .mode_bit_i(mode_bit_i),
 		     .overflow_o(flags_o[i+j*MAX_DIM]) // flag for overflow
            );
     end 
@@ -94,7 +97,8 @@ always @(posedge clk_i or negedge rst_ni)
 		end
   else if(start_i) // if start bit
 		begin
-			counter <= counter[2*MAX_DIM-1:0]+1; //  count up with clk
+			if(~(counter>=(k_dim_i+m_dim_i+n_dim_i-2+3))) 
+				counter <= counter[2*MAX_DIM-1:0]+1; //  count up with clk
 		end
   else // if posedge clk and start != 1 -> initialize counter
 		begin
@@ -113,7 +117,7 @@ always @(posedge clk_i or negedge rst_ni)
 			       regMatA[index_a] <= {DATA_WIDTH{1'b0}}; // init to 0
 		      end
 	   end
-   else if(start_i && counter <(k_dim_i+m_dim_i+n_dim_i-1))  // make sure not to happen if we finished
+   else if(start_i && counter <(k_dim_i+m_dim_i+n_dim_i-2+3))  // make sure not to happen if we finished
 		begin
 			for (index_a = 0; index_a < MAX_DIM; index_a = index_a[2*MAX_DIM:0]+1) // loop with index_a 
 				begin : Left  // start insert to reg the values
@@ -137,7 +141,7 @@ always @(posedge clk_i or negedge rst_ni)
 			       regMatB[index_b] <= {DATA_WIDTH{1'b0}};  // init to 0
 		      end // end for
 	    end // end if
-    else if(start_i && counter<(k_dim_i+m_dim_i+n_dim_i-1)) // make sure not to happen if we finished
+    else if(start_i && counter<(k_dim_i+m_dim_i+n_dim_i-2+3)) // make sure not to happen if we finished
 		begin
 			for (index_b = 0; index_b < MAX_DIM; index_b = index_b[2*MAX_DIM:0] +1) // loop with index_a 
 				begin : Top  // start insert to reg the values
@@ -158,7 +162,7 @@ always @(posedge clk_i or negedge rst_ni)
 		begin
 			finish_mul_o <= 1'b0; // init to 0
 		end
-    else if(~finish_write_i && start_i && (counter>=(k_dim_i+m_dim_i+n_dim_i-1))) // make sure not to happen if we finished
+    else if(start_i && (counter>=(k_dim_i+m_dim_i+n_dim_i-2+3))) // make sure not to happen if we finished
 		begin
 			finish_mul_o <= 1'b1; // sign that we finish the operation
 		end	 // end  if

@@ -10,12 +10,12 @@
 
 `resetall
 `timescale 1ns/10ps
-module operands_module(clk_i,rst_ni,write_enable_i,address_i,data_i,strobe_i,start_send_i,data_o,finish_send_o); 
+module operands_module(clk_i,rst_ni,write_enable_i,address_i,data_i,strobe_i,start_send_i,data_o); 
 input clk_i,rst_ni; // clk,reset
 input write_enable_i; // enable writing to operands
 input  address_i,strobe_i,start_send_i; // adress of writing (for line/col)
 input data_i; //the data we ant to write
-output data_o,finish_send_o; // the data we read (line/col)
+output data_o; // the data we read (line/col)
 
 parameter DATA_WIDTH = 32; // data width
 parameter BUS_WIDTH = 64; // bus width
@@ -30,7 +30,7 @@ reg [BUS_WIDTH-1:0] registers [MAX_DIM-1:0]; // where we keep the operands
 reg  [$clog2(MAX_DIM)+1:0] index;  // Read and Write Logic
 reg  [$clog2(MAX_DIM)-1:0] addrSendOp;
 wire [$clog2(MAX_DIM)-1:0] addrWireOut;
-wire start_send_i;
+wire start_i;
 reg overflowBit;
 wire finish_send_o;
 
@@ -42,14 +42,14 @@ generate  // grenerate the block
 				begin:strobe_operand
 				if(~rst_ni) //if we writing and in strobe and enabled
 					begin
-					for(index = 0; index < MAX_DIM ; index = index[$clog2(MAX_DIM):0]+1)
+					for(index = 0; index < MAX_DIM ; index = index+1)
 						begin
 						  registers[index][(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <=  {(DATA_WIDTH){1'b0}}; // write data
 						end
 					end	
-				 else if(write_enable_i) //if we writing and in strobe and enabled
+				 else if(strobe_i[b]) //if we writing and in strobe and enabled
 					begin
-						registers[address_i][(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <= strobe_i[b] ? data_i[(b+1)*DATA_WIDTH-1-:DATA_WIDTH] : {(DATA_WIDTH){1'b0}}; // write data
+						registers[address_i][(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <=  data_i[(b+1)*DATA_WIDTH-1-:DATA_WIDTH]; // write data
 					end
 				end
 		end 
@@ -64,14 +64,18 @@ always@(posedge clk_i or negedge rst_ni)
 			end
 		else
 			begin
-				if(start_send_i){overflowBit,addrSendOp} <= addrSendOp + 1;		
+				if(start_send_i && ~overflowBit){overflowBit,addrSendOp} <= addrSendOp + 1;	
+				else
+					begin
+						addrSendOp <= {($clog2(MAX_DIM)){1'b0}};
+						overflowBit <= 1'b0;
+					end
 			end
 	end
 	
 assign addrWireOut = (start_send_i && ~overflowBit) ? addrSendOp : address_i;
-assign finish_send_o = overflowBit ? 1'b1 : 1'b0;
     // Output assignment for read data
-assign data_o  = (write_enable_i == 1'b0) ? registers[addrWireOut] : {(BUS_WIDTH){1'b0}}; // read the data async
+assign data_o  = (strobe_i == {(MAX_DIM){1'b0}}) ? registers[addrWireOut] : {(BUS_WIDTH){1'b0}}; // read the data async
 endmodule
 
 /*

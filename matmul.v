@@ -29,6 +29,7 @@ wire finishMul,enableWriteSp;
 wire signed [BUS_WIDTH-1:0] matA,matB,matC;
 wire psel_i,penable_i,pwrite_i;
 wire [MAX_DIM-1:0] pstrb_i;
+wire [MAX_DIM-1:0] pstrbApb;
 wire [BUS_WIDTH-1:0] pwdata_i;
 wire [ADDR_WIDTH-1:0] paddr_i;
 wire pready_o,pslverr_o,busy_o;
@@ -36,13 +37,12 @@ wire  [BUS_WIDTH-1:0] prdata_o;
 wire [ADDR_WIDTH-1:0] addressApb,addressMatmul,addressMem;
 wire [ADDR_WIDTH-1:0] addressReadA,addressReadB,addressReadC;
 wire [BUS_WIDTH-1:0] readDataMem,writeDataMem;
+wire [BUS_WIDTH-1:0] readDataA,readDataB,readDataC;
 wire [BUS_WIDTH-1:0] writeDataApb,writeDataMatmul;
 wire writeEnable;
-wire finishedA,finishedB,finishedC;
-wire startA,startB,startC;
 assign addressMem   = startBit ? addressMatmul : addressApb;
 assign writeDataMem = startBit ? writeDataMatmul : writeDataApb;
-assign writeEnable  = startBit ? pwrite_i : 1'b0;
+assign writeEnable  = ~startBit ? pwrite_i : 1'b0;
 
 
 matmul_calc_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR_WIDTH)) U_matmul_calc(
@@ -51,20 +51,16 @@ matmul_calc_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(AD
 .n_dim_i(nDim),
 .k_dim_i(kDim),
 .m_dim_i(mDim),
-.data_i(readDataMem),
 .start_i(startBit),
 .mode_i(modeBit),
-.finished_a_i(finishedA),
-.finished_b_i(finishedB),
-.finished_c_i(finishedC),
+.data_a_i(readDataA),
+.data_b_i(readDataB),
+.data_c_i(readDataC),
 .data_o(writeDataMatmul),
 .address_o(addressMatmul),
 .flags_o(flagsData),
 .finish_mul_o(finishMul),
-.enable_w_o(enableWriteSp),
-.get_matA_o(startA),
-.get_matB_o(startB),
-.get_matC_o(startC)
+.enable_w_o(enableWriteSp)
 );
 
 apb_slave_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR_WIDTH)) U_apb(
@@ -83,7 +79,8 @@ apb_slave_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR
 .pslverr_o(pslverr_o),
 .prdata_o(prdata_o),
 .busy_o(busy_o),
-.bus_mem_o(writeDataApb)
+.bus_mem_o(writeDataApb),
+.strobe_o(pstrbApb)
 );
 
 
@@ -95,11 +92,8 @@ register_file_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(
 .data_i(writeDataMem),
 .data_flags_i(flagsData),
 .write_enable_i(writeEnable),
-.strobe_i(pstrb_i),
+.strobe_i(pstrbApb),
 .sp_enable_i(enableWriteSp),
-.start_send_a_i(startA),
-.start_send_b_i(startB),
-.start_send_c_i(startC),
 .start_bit_i(finishMul),
 .n_dim_o(nDim),
 .k_dim_o(kDim),
@@ -107,8 +101,8 @@ register_file_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(
 .mode_bit_o(modeBit),
 .start_bit_o(startBit),
 .data_o(readDataMem),
-.finish_send_a_o(finishedA),
-.finish_send_b_o(finishedB),
-.finish_send_c_o(finishedC)
+.data_a_o(readDataA),
+.data_b_o(readDataB),
+.data_c_o(readDataC)
 );
 endmodule
