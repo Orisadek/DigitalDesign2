@@ -39,11 +39,12 @@ wire [ADDR_WIDTH-1:0] addressReadA,addressReadB,addressReadC;
 wire [BUS_WIDTH-1:0] readDataMem,writeDataMem;
 wire [BUS_WIDTH-1:0] readDataA,readDataB,readDataC;
 wire [BUS_WIDTH-1:0] writeDataApb,writeDataMatmul;
-wire writeEnable;
+wire writeEnable,busyBit;
+
 assign addressMem   = startBit ? addressMatmul : addressApb;
 assign writeDataMem = startBit ? writeDataMatmul : writeDataApb;
 assign writeEnable  = ~startBit ? pwrite_i : 1'b0;
-
+assign busy_o = (busyBit || startBit);
 
 matmul_calc_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR_WIDTH)) U_matmul_calc(
 .clk_i(clk_i),
@@ -78,7 +79,7 @@ apb_slave_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR
 .pready_o(pready_o),
 .pslverr_o(pslverr_o),
 .prdata_o(prdata_o),
-.busy_o(busy_o),
+.busy_o(busyBit),
 .bus_mem_o(writeDataApb),
 .strobe_o(pstrbApb)
 );

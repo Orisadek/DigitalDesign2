@@ -18,8 +18,7 @@ module matmul_stimulus #(
 			         OPERAND_A  = 5'b00100, // Operand-A address
 			         OPERAND_B  = 5'b01000, // Operand-B address
 				     FLAGS	    = 5'b01100, // flags address
-			         SP 		= 5'b10000 // SP address
-
+			         SP 		= 5'b10000 // SP address 
 ) (
     matmul_intf.STIMULUS    intf
 );
@@ -44,7 +43,8 @@ module matmul_stimulus #(
 	wire prdata_i  = intf.prdata_o;
 	wire busy_i    = intf.busy_o;
   
- 
+	reg stim_valid;
+	
 	string row_data_cell_str;
 	string col_data_cell_str;
 	 
@@ -102,9 +102,8 @@ end endtask
   begin
        //check all 3 files headers of the matrices First line is Matrices dimensions in syntext format of N x K
         //-----------------MatrixA file------------
-	    $display("set_data");
 		if($fscanf(matrixA_fd, "%d x %d\n", MatrixA_rows, MatrixA_colms) != 2) begin  //if the first row is not 2 numbers and they are no
-            $fatal(1, "Failed to read the size line of matrixA_FILE");
+			$fatal(1, "Failed to read the size line of matrixA_FILE");
             $fclose(matrixA_fd);
         end
 		  $display(MatrixA_rows,"MatrixA_rows");
@@ -112,16 +111,7 @@ end endtask
         if($fscanf(matrixB_fd, "%d x %d\n", MatrixB_rows, MatrixB_colms) != 2) begin
             $fatal(1, "Failed to read the size line of MatrixB_FILE");
             $fclose(matrixB_fd);
-        end
-		/*
-        // Sanity check for simple input
-        if((MatrixA_rows != N) || (MatrixA_colms != K)) 
-            $fatal(1, $sformatf("Bad Configs in  Matrix_A_file, got (%0d,%0d) and (%0d,%0d)",MatrixA_rows,MatrixA_colms,N,K));
-        if((MatrixB_rows != K) || (MatrixB_colms != M)) 
-            $fatal(1, $sformatf("Bad Configs in  Matrix_B_file, got (%0d,%0d) and (%0d,%0d)",MatrixB_rows,MatrixB_colms,K,M));
-       // if((MatrixC_rows != N) || (MatrixC_colms != M)) 
-       //     $fatal(1, $sformatf("Bad Configs in Watermark and Matrix_C_file, got (%0d,%0d) and (%0d,%0d)",MatrixC_rows,MatrixC_colms,N,M)); 
-		*/	   
+        end   
  end
    endtask
 
@@ -134,30 +124,29 @@ task do_reset; begin
 		paddr_o  = 0;
 		row_data_o = 0;
 		col_data_o = 0;
+		stim_valid = 1;
         // Open Stimulus files
         open_files(); // Open all 3
         // Reset done.
 end endtask
-	
-task apb_write_control; begin
-    psel_o       = 1'b1;
-	pwrite_o     = 1'b1;
-	paddr_o[4:0] = CONTROL; 
-	pwdata_o[3:2]= 2'b00;
-	pwdata_o[5:4]= 2'b00;
-	pwdata_o[9:8]= 2'b01;
-	pwdata_o[11:10]= 2'b01;
-	pwdata_o[13:12]= 2'b01;
-	#2
-	penable_o    = 1'b1;
-	pstrb_o      = 4'b1111;
-	#2
-	psel_o       = 1'b0;
-	pwrite_o     = 1'b0;  
-end endtask
+
+task apb_read(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM):0] line,output bit [BUS_WIDTH-1:0] data);
+	begin
+		psel_o       = 1'b1;
+		pwrite_o     = 1'b0;
+		paddr_o[4:0] = module_mem; 
+		paddr_o[5+:$clog2(MAX_DIM)] = line;
+		@(posedge clk_i)
+		penable_o    = 1'b1;
+		pstrb_o      = 4'b0000;
+		@(posedge clk_i)
+		psel_o       = 1'b0;
+		pwrite_o     = 1'b0;  
+end endtask	
 
 task apb_write(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM):0] line,input bit [BUS_WIDTH-1:0] data);
 	begin
+		wait(pslverr_i == 1'b0);
 		psel_o       = 1'b1;
 		pwrite_o     = 1'b1;
 		paddr_o[4:0] = module_mem; 
@@ -166,9 +155,27 @@ task apb_write(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM):0] line,inp
 		@(posedge clk_i)
 		penable_o    = 1'b1;
 		pstrb_o      = 4'b1111;
+		//wait(pready_i==1);
 		@(posedge clk_i)
+		#1
 		psel_o       = 1'b0;
 		pwrite_o     = 1'b0;  
+		penable_o    = 1'b0;
+		pstrb_o      = 4'b0000;
+end endtask
+
+task control_write(input bit start_bit,input bit mode_bit ,input bit [1:0] write_target,input bit [1:0] read_target,
+					input bit [1:0] n,input bit [1:0] k,input bit [1:0] m);
+	begin
+			bit [15:0] control_bit;  
+			control_bit[0] = start_bit;
+			control_bit[1] = mode_bit;
+			control_bit[3:2]= write_target;
+			control_bit[5:4]= read_target;
+			control_bit[9:8]= n;
+			control_bit[11:10]= k;
+			control_bit[13:12]= m;
+			@(posedge clk_i)apb_write(CONTROL,0,control_bit);
 end endtask
 
 /*
@@ -185,22 +192,15 @@ end
         // Initial checks
         if(matrixA_File == "") $fatal(1, "matrixA_File is not set");
         if(matrixB_File == "") $fatal(1, "matrixB_File is not set");
-
 		wait (rst_ni == 1'b0);
 	    do_reset();
         // Reset Done
-		$display("INIT_STIM");
-		
 		wait (rst_ni == 1'b1);
-		
-	    
-        set_data(); // First must succeed
         // Start Image Stimulus
-      //  while( stim_valid ) begin
-		//	wait(!rst_ni );
+        while(stim_valid == 1 && ~$feof(matrixB_fd) && ~$feof(matrixA_fd)) begin
+			set_data(); // First must succeed
             for(int i=0; i < MatrixA_rows; i=i+1) begin
                 for(int j=0; j < MatrixA_colms; j=j+1) begin
-					logic [DATA_WIDTH-1:0] temp;
 					read_data_A(i,j);
                 end
               //  if( VERBOSE )
@@ -209,21 +209,29 @@ end
             end
 			
 			for(int i=0; i < MatrixB_colms; i=i+1) begin
-                for(int j=0; j < MatrixB_rows; j=j+1) begin
+                for(int j = 0; j < MatrixB_rows; j=j+1) begin
                    read_data_B(i,j);
                 end
-             //   if( VERBOSE )
-               //     $display("[%7t] Finished Row %0d", $time, i);
+                $display("Finished Col %0d", i);
 				@(posedge clk_i)apb_write(OPERAND_B,i,col_data_o);
             end
-           // set_data();
+			 control_write(1'b1,1'b0 ,2'b00,2'b00,
+					MatrixA_rows-1,MatrixA_colms-1,MatrixB_colms-1);
+			$display("write control");
+			wait(busy_i == 1'b0);
+          
          //   img_done_o = 1'b1;
          //   @(posedge clk) img_done_o = 1'b0;
-      //  end
+        end
+		$fclose(matrixA_fd);
+		$fclose(matrixB_fd);
  end
 
 
-
+// change busy_i - so when matmul busy_i=1
+// add wait until not bust
+// change, when err stay until Reset
+// add when EOF get out of file
 
 
 

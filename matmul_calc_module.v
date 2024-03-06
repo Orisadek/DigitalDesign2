@@ -82,25 +82,28 @@ always@(posedge clk_i or negedge rst_ni)
 			begin
 				addrLogA    <= 0;
 				startBitA   <= 1'b0;
+				a_matrix_local <= 0;
 			end
 		else
 			begin
 				if(start_i)
 					begin
-						a_matrix_local[((addrLogA+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_a_i;
-						if(addrLogA == MAX_DIM-1)
+						if(addrLogA == n_dim_i)
 							begin
-								addrLogA  <= 0;
+								a_matrix_local[((addrLogA+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_a_i;
+								addrLogA <= addrLogA + 1;
 								startBitA <= 1'b1;
 							end
-						else
+						else if (addrLogA < n_dim_i)
 							begin
+								a_matrix_local[((addrLogA+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_a_i;
 								addrLogA <= addrLogA + 1;
 							end
 					end						
 				else
 					begin
 						startBitA <= 1'b0;
+						addrLogA  <= 0;
 					end
 						
 			end
@@ -112,25 +115,28 @@ always@(posedge clk_i or negedge rst_ni)
 			begin
 				addrLogB    <= 0;
 				startBitB   <= 1'b0;
+				b_matrix_local <= 0;
 			end
 		else
 			begin
 				if(start_i)
 					begin
-						b_matrix_local[((addrLogB+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_b_i;
-						if(addrLogB == MAX_DIM-1)
+						if(addrLogB == m_dim_i)
 							begin
-								addrLogB  <= 0;
+								b_matrix_local[((addrLogB+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_b_i;
+								addrLogB <= addrLogB + 1;
 								startBitB <= 1'b1;
 							end
-						else
+						else if(addrLogB < m_dim_i)
 							begin
+								b_matrix_local[((addrLogB+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_b_i;
 								addrLogB <= addrLogB + 1;
 							end
 					end						
 				else
 					begin
 						startBitB <= 1'b0;
+						addrLogB  <= 0;
 					end
 						
 			end
@@ -142,25 +148,28 @@ always@(posedge clk_i or negedge rst_ni)
 			begin
 				addrLogC    <= 0;
 				startBitC   <= 1'b0;
+				c_bias_local <= 0 ;
 			end
 		else
 			begin
 				if(start_i)
 					begin
-						c_bias_local[((addrLogC+1)*BUS_WIDTH-1)-:BUS_WIDTH] <= data_c_i;
-						if(addrLogC == MAX_DIM-1)
+						if(addrLogC == (n_dim_i+1)*(m_dim_i+1)-1)
 							begin
-								addrLogC  <= 0;
+								c_bias_local[((addrLogC+1)*BUS_WIDTH-1)-:BUS_WIDTH] <= data_c_i;
 								startBitC <= 1'b1;
+								addrLogC <= addrLogC + 1;
 							end
-						else
+						else if(addrLogC < (n_dim_i+1)*(m_dim_i+1)-1)
 							begin
+								c_bias_local[((addrLogC+1)*BUS_WIDTH-1)-:BUS_WIDTH] <= data_c_i;
 								addrLogC <= addrLogC + 1;
 							end
 					end						
 				else
 					begin
 						startBitC <= 1'b0;
+						addrLogC  <= 0;
 					end
 						
 			end

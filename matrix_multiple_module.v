@@ -97,7 +97,7 @@ always @(posedge clk_i or negedge rst_ni)
 		end
   else if(start_i) // if start bit
 		begin
-			if(~(counter>=(k_dim_i+m_dim_i+n_dim_i-2+3))) 
+			if(counter < (k_dim_i+m_dim_i+n_dim_i+1) || counter == (k_dim_i+m_dim_i+n_dim_i+1)) 
 				counter <= counter[2*MAX_DIM-1:0]+1; //  count up with clk
 		end
   else // if posedge clk and start != 1 -> initialize counter

@@ -36,9 +36,9 @@ wire [BUS_WIDTH-1:0] pwdata_i; // data in
 wire [BUS_WIDTH-1:0] bus_mem_i;
 wire [ADDR_WIDTH-1:0] paddr_i; // address in
 reg  [ADDR_WIDTH-1:0] address_o;
-reg  pready_o,pready_next;    // ready out and next
-reg  pslverr_o,pslverr_next;   // error out and next
-reg  busy_o,next_busy;
+reg  pready_o;    // ready out and next
+reg  pslverr_o;   // error out and next
+reg  busy_o;
 reg  [BUS_WIDTH-1:0] prdata_o, prdata_next; // data out and next
 wire [BUS_WIDTH-1:0] bus_mem_o; 
 reg  [1:0] current_state,next_state;   // current state and next
@@ -92,7 +92,7 @@ always @(*)	// combinatorical always
 							pready_o     = penable_i ? 1'b1 : 1'b0;  // allow next op 
 							prdata_next  = penable_i ? bus_mem_i : {(BUS_WIDTH){1'b0}}; //insert the data from ram to prdata_o bus.
 							next_state   = penable_i ? IDLE : ACCESS_READ; // go to idle / stay
-							busy_o    = penable_i ? 1'b0: 1'b1;  //  busy
+							busy_o       = penable_i ? 1'b0: 1'b1;  //  busy
 							pslverr_o = 1'b0; // without an err
 							address_next = {(ADDR_WIDTH){1'b0}};
 							strobe_o = {(MAX_DIM){1'b0}};
@@ -118,8 +118,8 @@ always @(*)	// combinatorical always
 							writeEn      = (penable_i && ~(paddr_i[4:0] == FLAGS || paddr_i[4:0] == SP)) ? 1'b1 : 1'b0;
 							pready_o     = penable_i ? 1'b1 : 1'b0;  // allow next op
 							next_state   = penable_i ? IDLE : ACCESS_WRITE; // go to idle / stay
-							busy_o       = penable_i ? 1'b0: 1'b1;  //  busy
-							pslverr_o    = ~(paddr_i[4:0] == FLAGS || paddr_i[4:0] == SP) ? 1'b0 : 1'b1; // without an err
+							busy_o       =  1'b1;  //  busy
+							pslverr_o    = (paddr_i[4:0] == FLAGS || paddr_i[4:0] == SP); // without an err
 							prdata_next  = {(BUS_WIDTH){1'b0}}; // data 0	
 							address_next = {(ADDR_WIDTH){1'b0}};
 							strobe_o     = (penable_i && ~(paddr_i[4:0] == FLAGS || paddr_i[4:0] == SP)) ? pstrb_i : 0;
@@ -133,6 +133,7 @@ always @(*)	// combinatorical always
 							busy_o    = 1'b0;
 							address_next = {(ADDR_WIDTH){1'b0}};
 							writeEn   = 1'b0;
+							strobe_o     =  0;
 						end // end else
 				end  // end write
           default:
@@ -144,6 +145,7 @@ always @(*)	// combinatorical always
 				pslverr_o = 1'b1; // with an err
 				writeEn   = 1'b0;
 				address_next = {(ADDR_WIDTH){1'b0}};
+				strobe_o     =  0;
 			end
        endcase
     end	
@@ -152,44 +154,21 @@ always @(*)	// combinatorical always
 /// change to assign bus_mem_o to pwdata_i
 // make sure the strobe is valid and then get it out as valid write line
 
-assign bus_mem_o = writeEn ? pwdata_i : {(BUS_WIDTH){1'b0}};
-/*
-genvar b; // b variable
-generate  // grenerate the block
-  for(b = 0 ; b < MAX_DIM ; b = b + 1) // for loop
-    begin:insert_data_width
-        always @(posedge clk_i or negedge rst_ni)// sensitivity list
-			begin:strobe_apb
-				if(~rst_ni)
-					begin
-						bus_mem_o[(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <= {(DATA_WIDTH){1'b0}};
-					end
-				else if(strobe_i[b] && pwrite_i && psel_i && penable_i && ~(paddr_i[4:0] == FLAGS || paddr_i[4:0] >= SP) && ~start_bit_i) //if we writing and in strobe and enabled
-					begin
-						bus_mem_o[(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <= pwdata_i[(b+1)*DATA_WIDTH-1-:DATA_WIDTH]; // write data
-					end
-			end
-    end 
-endgenerate
-*/
+assign bus_mem_o = writeEn && ~start_bit_i ? pwdata_i : {(BUS_WIDTH){1'b0}};
+
+
 always @(posedge clk_i or negedge rst_ni) // Asyncronise reset and clk
 begin: apb_clk
 		if(~rst_ni) //reset, go back to idle and reset all outputs.
     		begin
     			 current_state   <= IDLE; // state idle
-    			 pready_o 	     <= 1'b1;   // ready 1
-    			 pslverr_o	     <= 1'b0;   // err 0
     			 prdata_o 	     <= {(BUS_WIDTH){1'b0}};   // out data 0
-    			 busy_o          <= 1'b0;	// busy 0
 				 address_o       <= {(ADDR_WIDTH){1'b0}};
     		end
 	  else 
 			 begin
 			   current_state   <= next_state; // move to next state
-  			//   pready_o 	   <= pready_next; // move to next ready
-    		 //  pslverr_o	   <= pslverr_next; // move to next pslverr
     		   prdata_o 	   <= prdata_next; // move to next out data
-  			//   busy_o          <= next_busy; // move to next busy
 			   address_o 	   <= address_next;
 			end
 end

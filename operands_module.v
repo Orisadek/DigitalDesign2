@@ -65,10 +65,14 @@ always@(posedge clk_i or negedge rst_ni)
 		else
 			begin
 				if(start_send_i && ~overflowBit){overflowBit,addrSendOp} <= addrSendOp + 1;	
-				else
+				else if(~start_send_i)
 					begin
 						addrSendOp <= {($clog2(MAX_DIM)){1'b0}};
 						overflowBit <= 1'b0;
+					end
+				else
+					begin
+						addrSendOp <= {($clog2(MAX_DIM)){1'b0}};
 					end
 			end
 	end
