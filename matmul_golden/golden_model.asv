@@ -1,0 +1,43 @@
+clc
+clear all
+% Define the file name
+MatrixA_file_name = 'MatrixA.txt ';   %'MatrixA file name'
+MatrixB_file_name = 'MatrixB.txt ';   %'MatrixB file name'
+MatrixC_file_name = 'MatrixC.txt ';   %'MatrixC file name'
+% Open the file for writing
+fidA = fopen(MatrixA_file_name, 'w');
+fidB = fopen(MatrixB_file_name, 'w');
+fidC = fopen(MatrixC_file_name, 'w');
+%parameters
+num_matrices = 2;
+N = 2;
+K = 4;
+M = 1;
+Maxnumber = 10^5;
+Minnumber = 0;
+
+
+
+for i = 1:num_matrices % Generate matrices 
+        % Generate a random matrixes
+    random_matrix_A = randi([Minnumber,Maxnumber],N,K);
+    random_matrix_B = randi([Minnumber,Maxnumber],K,M);
+    random_matrix_C = random_matrix_A*random_matrix_B
+    
+    % Write the matrices to the files
+    fprintf(fidA, '%d x %d\n', N,K);
+    fprintf(fidA, '%f ', random_matrix_A);
+    fprintf(fidA, '\n\n');
+    fprintf(fidB, '%d x %d\n', K,M);
+    fprintf(fidB, '%f ', random_matrix_B);
+    fprintf(fidB, '\n\n');
+    fprintf(fidC, '%d x %d\n', N,M);
+    fprintf(fidC, '%f ', random_matrix_C);
+    fprintf(fidC, '\n\n');
+end
+I have 
+% Close the file
+fclose(fidA);
+fclose(fidB);
+fclose(fidC);
+disp(['Matrices saved to file: ',MatrixA_file_name,MatrixB_file_name,MatrixC_file_name]);
