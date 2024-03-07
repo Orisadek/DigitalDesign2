@@ -5,33 +5,66 @@ clear all
 MatrixA_file_name = 'MatrixA.txt';   %'MatrixA file name'
 MatrixB_file_name = 'MatrixB.txt';   %'MatrixB file name'
 MatrixC_file_name = 'MatrixC.txt';   %'MatrixC file name'
+Mod_file_name = 'ModFile.txt';
 % Open the file for writing
 
 fidA = fopen(MatrixA_file_name, 'w');
 fidB = fopen(MatrixB_file_name, 'w');
 fidC = fopen(MatrixC_file_name, 'w');
+fidMOD = fopen(Mod_file_name, 'w');
 
 %parameters
-DATA_WIDTH = 16;
-BUS_WIDTH = 64;
+DATA_WIDTH = 8;
+BUS_WIDTH = 32;
 ADDR_WIDTH = 32;
 MAX_DIM = BUS_WIDTH/DATA_WIDTH;
-num_matrices = 3;
+num_matrices = 15;
+SPN = 4;
 Maxnumber = 2^(DATA_WIDTH-1);
 Minnumber = -2^(DATA_WIDTH-1);
-
+history = {};
 for i = 1:num_matrices
     % Generate matrices size
     N = randi([1,MAX_DIM]);
     K = randi([1,MAX_DIM]);
     M = randi([1,MAX_DIM]);
+    modbit = randi([0,1]);
+    
     % Generate random matrices
     random_matrix_A = randi([Minnumber, Maxnumber], N, K);
     random_matrix_B = randi([Minnumber, Maxnumber], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
+    
+    if(modbit)
+        for index = 1:i           
+           try
+            if(size(random_matrix_C)==size(history{index}))
+                random_matrix_C = random_matrix_C + history{index};
+                fprintf(fidMOD, 'add saved matrix %d to the MatrixC, ', index);  
+                break 
+            end
+           end
+        if(index == i)
+            modbit = 0;
+        end
+        end
+      end
+
+    fprintf(fidMOD,'modbit = %d ',modbit);
+    fprintf(fidMOD, '\n');    
+    
+    if size(history)<SPN %Limmit the number of saved matrices to 4
+        history{end+1}  = random_matrix_C;
+    end
+
+    
+
+
     random_matrix_B = random_matrix_B';
     % Write the matrices to the files
     % Save matrix A to file
+
+
     fprintf(fidA, '%d x %d\n', N, K);
     for row = 1:N
         fprintf(fidA, '%f\t', random_matrix_A(row, :));
@@ -41,8 +74,8 @@ for i = 1:num_matrices
 
     % Save matrix B to file
     fprintf(fidB, '%d x %d\n', K, M);
-    %for row = 1:K
-    for row = 1:M
+    %for row = 1:K %in order to print normal.
+    for row = 1:M  %in order to print transpose. 
         fprintf(fidB, '%f\t', random_matrix_B(row, :));
         fprintf(fidB, '\n');
     end
@@ -55,6 +88,8 @@ for i = 1:num_matrices
         fprintf(fidC, '\n');
     end
     fprintf(fidC, '\n\n');
+
+
 end
 % Close the file
 fclose(fidA);
