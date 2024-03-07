@@ -53,11 +53,16 @@ for i = 1:num_of_random_matrices
         end
         end
       end
-
-    fprintf(fidMOD,'modbit = %d, ',modbit); 
     
-    random_SNP = randi([1,SPN]);
+    while true
+      random_SNP = randi([1,SPN]);
+      if (random_SNP ~= temp)
+          break;
+      end
+    end
+
     history{random_SNP}  = random_matrix_C;
+    fprintf(fidMOD,'modbit = %d, ',modbit); 
     fprintf(fidMOD,'write target %d, ',random_SNP);
     fprintf(fidMOD, 'read target %d', temp);
     fprintf(fidMOD, '\n');  
@@ -119,11 +124,15 @@ for i = 1:num_of_random_matrices
         end
         end
       end
-
-    fprintf(fidMOD,'modbit = %d, ',modbit); 
     
-    random_SNP = randi([1,SPN]);
+    while true
+      random_SNP = randi([1,SPN]);
+      if (random_SNP ~= temp)
+          break;
+      end
+    end
     history{random_SNP}  = random_matrix_C;
+    fprintf(fidMOD,'modbit = %d, ',modbit); 
     fprintf(fidMOD,'write target %d, ',random_SNP);
     fprintf(fidMOD, 'read target %d', temp);
     fprintf(fidMOD, '\n');  
@@ -189,7 +198,13 @@ for i = 1:num_of_random_matrices
 
     fprintf(fidMOD,'modbit = %d, ',modbit); 
     
-    random_SNP = randi([1,SPN]);
+    while true
+      random_SNP = randi([1,SPN]);
+      if (random_SNP ~= temp)
+          break;
+      end
+    end
+    
     history{random_SNP}  = random_matrix_C;
     fprintf(fidMOD,'write target %d, ',random_SNP);
     fprintf(fidMOD, 'read target %d', temp);
