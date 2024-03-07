@@ -69,7 +69,7 @@ endgenerate
 generate
   for (j = 0; j < MAX_DIM; j = j +1) begin : rows_assign // connect rows output and matC
 	   for (i = 0; i < MAX_DIM; i = i +1) begin : cols_assign // connect cols output and matC
-		     assign c_matrix_o[(j*(BUS_WIDTH)*MAX_DIM+(i+1)*(BUS_WIDTH))-1-:BUS_WIDTH] = matC[i][j]; // conect the wires
+		     assign c_matrix_o[(j*(BUS_WIDTH)*MAX_DIM+(i+1)*(BUS_WIDTH))-1-:BUS_WIDTH] = matC[j][i]; // conect the wires
 	   end // end for i
   end // end for j
  endgenerate  

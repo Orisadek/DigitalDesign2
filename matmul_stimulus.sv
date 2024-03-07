@@ -15,12 +15,16 @@ module matmul_stimulus #(
     parameter string matrixB_File = "",
     parameter string matrixC_File = "",
 	localparam [4:0] CONTROL    = 5'b00000, // Control address
-			         OPERAND_A  = 5'b00100, // Operand-A address
-			         OPERAND_B  = 5'b01000, // Operand-B address
-				     FLAGS	    = 5'b01100, // flags address
-			         SP 		= 5'b10000 // SP address 
+					 OPERAND_A  = 5'b00100, // Operand-A address
+					 OPERAND_B  = 5'b01000, // Operand-B address
+					 FLAGS	    = 5'b01100, // flags address
+					 SP0 		= 5'b10000, // SP address
+					 SP1 		= 5'b10100, // SP address
+					 SP2 		= 5'b11000, // SP address
+					 SP3 		= 5'b11100 // SP address
 ) (
-    matmul_intf.STIMULUS    intf
+    matmul_intf.STIMULUS    intf,
+	output logic stim_done_o
 );
     import matmul_pkg::*;   
     integer matrixA_fd,matrixB_fd,matrixC_fd;
@@ -28,7 +32,7 @@ module matmul_stimulus #(
     integer MatrixB_rows,MatrixB_colms;
     integer MatrixC_rows,MatrixC_colms;
 	
-    logic [BUS_WIDTH-1-1:0] rowData;
+    logic [BUS_WIDTH-1:0] rowData;
     logic [BUS_WIDTH-1:0] colData ;
 	logic [DATA_WIDTH-1:0] row_data_cell;
 	logic [DATA_WIDTH-1:0] col_data_cell;
@@ -54,7 +58,8 @@ module matmul_stimulus #(
 	logic [MAX_DIM-1:0] pstrb_o;
 	logic [BUS_WIDTH-1:0]  pwdata_o;
 	logic [ADDR_WIDTH-1:0] paddr_o;
-	
+	logic [BUS_WIDTH-1:0] data_o [MAX_DIM-1:0][MAX_DIM-1:0];
+	assign intf.dataSp    = data_o;
 	assign intf.psel_i	  = psel_o;
 	assign intf.penable_i = penable_o;
 	assign intf.pwrite_i  = pwrite_o;
@@ -80,7 +85,7 @@ task read_data_B(input integer i, input integer j); begin
 	$display(i,j,"i,j read_data_B");
     if($fscanf(matrixB_fd, "%s[^\n]", col_data_cell_str) != 1)
             $fatal(1, $sformatf("Failed to read the %0dth data-line of MatB", i*BUS_WIDTH+j+1));
-	 $sscanf(col_data_cell_str, "%0d", col_data_cell_temp);
+	$sscanf(col_data_cell_str, "%0d", col_data_cell_temp);
 	$display("col_data_cell_str",col_data_cell_str);
 	$display("col_data_cell_temp %0b",col_data_cell_temp);
 	colData[((j+1)*DATA_WIDTH-1)-:DATA_WIDTH] = col_data_cell_temp;
@@ -178,14 +183,6 @@ task control_write(input bit start_bit,input bit mode_bit ,input bit [1:0] write
 			@(posedge clk_i)apb_write(CONTROL,{($clog2(MAX_DIM)){1'b0}},control_bit);
 end endtask
 
-/*
-initial begin : APB_MASTER
-    @(posedge clk)
-	
-	
-end
-*/
-
 // stim_valid init 1 in rst , 0 in EOF
 // bind - try to use 
  initial begin: INIT_STIM
@@ -197,8 +194,7 @@ end
         // Reset Done
 		wait (rst_ni == 1'b1);
         // Start Image Stimulus
-        while(stim_valid == 1 && ~$feof(matrixB_fd) && ~$feof(matrixA_fd)) begin
-		    $display("$feof(matrixB_fd) %0d $feof(matrixA_fd) %0d", $feof(matrixB_fd),$feof(matrixA_fd));
+        while(stim_valid == 1 && $feof(matrixB_fd) == 0 && $feof(matrixA_fd)== 0) begin
 			set_data(); // First must succeed
             for(int i=0; i < MatrixA_rows; i=i+1) begin
                 for(int j=0; j < MatrixA_colms; j=j+1) begin
@@ -219,6 +215,10 @@ end
 			 control_write(1'b1,1'b0 ,2'b00,2'b00,
 					MatrixA_rows-1,MatrixA_colms-1,MatrixB_colms-1);
 			wait(busy_i == 1'b0);
+			stim_done_o = 1;
+			rowData   = {(BUS_WIDTH){1'b0}};
+			colData   = {(BUS_WIDTH){1'b0}};
+		//	apb_read(SP0,input bit [$clog2(MAX_DIM):0] line,output bit [BUS_WIDTH-1:0] data)
          //   img_done_o = 1'b1;
          //   @(posedge clk) img_done_o = 1'b0;
         end

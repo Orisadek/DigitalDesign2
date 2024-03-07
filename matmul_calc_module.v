@@ -104,6 +104,7 @@ always@(posedge clk_i or negedge rst_ni)
 					begin
 						startBitA <= 1'b0;
 						addrLogA  <= 0;
+						a_matrix_local <= 0;
 					end
 						
 			end
@@ -137,6 +138,7 @@ always@(posedge clk_i or negedge rst_ni)
 					begin
 						startBitB <= 1'b0;
 						addrLogB  <= 0;
+						b_matrix_local <= 0;
 					end
 						
 			end
@@ -170,6 +172,7 @@ always@(posedge clk_i or negedge rst_ni)
 					begin
 						startBitC <= 1'b0;
 						addrLogC  <= 0;
+						c_bias_local <= 0 ;
 					end
 						
 			end
@@ -210,7 +213,7 @@ always @(posedge clk_i or negedge rst_ni)// sensitivity list
 		else if(finishMulWire && indexByte < MAX_DIM*MAX_DIM) //if we writing and in strobe and enabled
 			begin
 				address_o[4:0] 				       <= OPERAND_C;
-				address_o[5+2*$clog2(MAX_DIM)-1:5] <= indexByte;
+				address_o[5+2*$clog2(MAX_DIM)-1:5] <= indexByte[2*$clog2(MAX_DIM)-1:0];
 				data_o     						   <= cMatrixWire[BUS_WIDTH*(indexByte+1)-1-:BUS_WIDTH];
 				enable_w_o 						   <= 1'b1;
 				{overflowBit,indexByte} <= indexByte + 1;
@@ -221,7 +224,6 @@ always @(posedge clk_i or negedge rst_ni)// sensitivity list
 				finish_mul_o <= 1'b1;
 				data_o       <= {(BUS_WIDTH){1'b0}};
 				finishWrite  <= 1'b1;	
-				indexByte   <= {(2*$clog2(MAX_DIM)){1'b0}};
 			end
 		else 
 			begin
@@ -230,6 +232,7 @@ always @(posedge clk_i or negedge rst_ni)// sensitivity list
 				finishWrite  <= 1'b0;
 				data_o       <= {(BUS_WIDTH){1'b0}};
 				address_o 	 <= {(ADDR_WIDTH){1'b0}};
+				indexByte   <= {(2*$clog2(MAX_DIM)+1){1'b0}};
 			end
 	end
 

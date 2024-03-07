@@ -11,8 +11,8 @@
 `resetall
 `timescale 1ns/10ps
 module sp_module (clk_i,rst_ni,write_enable_i,address_i,data_i,mode_i,start_send_i,write_target_i,
-read_target_i,data_o); //descripition for all inputs\outputs
-input clk_i,rst_ni; // clk,reset
+read_target_i,mat_num_i,data_o); //descripition for all inputs\outputs
+input clk_i,rst_ni,mat_num_i; // clk,reset
 input write_enable_i,mode_i; // enable writing to operands
 input address_i; // adress of writing (for line/col)
 input data_i,start_send_i; //the data we want to write
@@ -38,7 +38,8 @@ reg  [BUS_WIDTH-1:0] mem [SP_NTARGETS*MAX_DIM*MAX_DIM-1:0]; // where we keep the
 reg  [$clog2(MAX_DIM*MAX_DIM*SP_NTARGETS)+1:0]index_insert_sp;
 reg  [2*$clog2(MAX_DIM)-1:0] addrSendSp;
 wire [2*$clog2(MAX_DIM)-1:0] addrWireOut;
-
+wire [1:0] addrWireMatOut;
+wire [1:0] mat_num_i;
 
 always @(posedge clk_i or negedge rst_ni) 
 	begin: writing_to_sp // we want it to activate during clk or rst
@@ -70,8 +71,9 @@ always@(posedge clk_i or negedge rst_ni)
 	
 	
 assign addrWireOut = (start_send_i && ~overflowBit) ? addrSendSp : address_i;
+assign addrWireMatOut = (start_send_i && ~overflowBit) ? read_target_i : mat_num_i;
     // Output assignment for read data
-assign data_o    = (write_enable_i == 1'b0 && mode_i) ? mem[read_target_i*MAX_DIM*MAX_DIM+addrSendSp]:{(BUS_WIDTH){1'b0}}; //read data is when not on write mod
+assign data_o    = (write_enable_i == 1'b0) ? mem[addrWireMatOut*MAX_DIM*MAX_DIM+addrWireOut]:{(BUS_WIDTH){1'b0}}; //read data is when not on write mod
 
 
 endmodule

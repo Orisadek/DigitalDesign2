@@ -29,7 +29,10 @@ localparam [4:0] CONTROL    = 5'b00000, // Control address
 			     OPERAND_A  = 5'b00100, // Operand-A address
 			     OPERAND_B  = 5'b01000, // Operand-B address
 				 FLAGS	    = 5'b01100, // flags address
-			     SP 		= 5'b10000; // SP address
+			     SP0 		= 5'b10000, // SP address
+				 SP1 		= 5'b10100, // SP address
+				 SP2 		= 5'b11000, // SP address
+				 SP3 		= 5'b11100; // SP address
 
 wire signed [BUS_WIDTH-1:0] dataOpA,dataOpB,dataSp;
 wire [BUS_WIDTH-1:0] dataFlags;
@@ -88,7 +91,34 @@ begin:begin_switch_case
 				strobeOpA = 0;
 				strobeOpB = 0; 
 			end
-		SP: // scrachpad
+		SP0: // scrachpad
+			begin
+				data_o = sp_enable_i ? {(BUS_WIDTH){1'b0}} : dataSp;
+				wEnCtrl = 0;
+				wEnMatA = 0;
+				wEnMatB = 0;
+				strobeOpA = 0;
+				strobeOpB = 0; 
+			end
+		SP1: // scrachpad
+			begin
+				data_o = sp_enable_i ? {(BUS_WIDTH){1'b0}} : dataSp;
+				wEnCtrl = 0;
+				wEnMatA = 0;
+				wEnMatB = 0;
+				strobeOpA = 0;
+				strobeOpB = 0; 
+			end
+		SP2: // scrachpad
+			begin
+				data_o = sp_enable_i ? {(BUS_WIDTH){1'b0}} : dataSp;
+				wEnCtrl = 0;
+				wEnMatA = 0;
+				wEnMatB = 0;
+				strobeOpA = 0;
+				strobeOpB = 0; 
+			end
+		SP3: // scrachpad
 			begin
 				data_o = sp_enable_i ? {(BUS_WIDTH){1'b0}} : dataSp;
 				wEnCtrl = 0;
@@ -164,6 +194,7 @@ sp_module#(.SP_NTARGETS(SP_NTARGETS),.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDT
 .write_target_i(writeTarget),
 .read_target_i(readTarget),
 .data_i(data_i),
+.mat_num_i(address_i[3:2]),
 .data_o(dataSp)
 );
 
