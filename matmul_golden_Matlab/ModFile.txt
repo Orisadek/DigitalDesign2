@@ -1,35 +1,15 @@
-0.000000	
-
-add saved matrix 1 to the MatrixC
-1.000000	
-
-0.000000	
-
-0.000000	
-
-add saved matrix 1 to the MatrixC
-1.000000	
-
-add saved matrix 1 to the MatrixC
-1.000000	
-
-add saved matrix 1 to the MatrixC
-1.000000	
-
-0.000000	
-
-0.000000	
-
-0.000000	
-
-0.000000	
-
-add saved matrix 1 to the MatrixC
-1.000000	
-
-0.000000	
-
-0.000000	
-
-0.000000	
-
+modbit = 0 
+modbit = 0 
+add saved matrix 2 to the MatrixC ,modbit = 1 
+modbit = 0 
+modbit = 0 
+add saved matrix 4 to the MatrixC ,modbit = 1 
+modbit = 0 
+modbit = 0 
+modbit = 0 
+modbit = 0 
+modbit = 0 
+modbit = 0 
+modbit = 0 
+modbit = 0 
+modbit = 0 
