@@ -13,7 +13,7 @@ fidC = fopen(MatrixC_file_name, 'w');
 
 %parameters
 DATA_WIDTH = 16;
-BUS_WIDTH = 32;
+BUS_WIDTH = 64;
 ADDR_WIDTH = 32;
 MAX_DIM = BUS_WIDTH/DATA_WIDTH;
 num_matrices = 3;
@@ -29,7 +29,7 @@ for i = 1:num_matrices
     random_matrix_A = randi([Minnumber, Maxnumber], N, K);
     random_matrix_B = randi([Minnumber, Maxnumber], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
-    
+    random_matrix_B = random_matrix_B';
     % Write the matrices to the files
     % Save matrix A to file
     fprintf(fidA, '%d x %d\n', N, K);
@@ -41,7 +41,8 @@ for i = 1:num_matrices
 
     % Save matrix B to file
     fprintf(fidB, '%d x %d\n', K, M);
-    for row = 1:K
+    %for row = 1:K
+    for row = 1:M
         fprintf(fidB, '%f\t', random_matrix_B(row, :));
         fprintf(fidB, '\n');
     end
