@@ -12,16 +12,19 @@ fidB = fopen(MatrixB_file_name, 'w');
 fidC = fopen(MatrixC_file_name, 'w');
 
 %parameters
-
+DATA_WIDTH = 16;
+BUS_WIDTH = 32;
+ADDR_WIDTH = 32;
+MAX_DIM = BUS_WIDTH/DATA_WIDTH;
 num_matrices = 3;
-Maxnumber = 2^16;
-Minnumber = 0;
+Maxnumber = 2^(DATA_WIDTH-1);
+Minnumber = -2^(DATA_WIDTH-1);
 
 for i = 1:num_matrices
     % Generate matrices size
-    N = randi([1,4]);
-    K = randi([1,4]);
-    M = randi([1,4]);
+    N = randi([1,MAX_DIM]);
+    K = randi([1,MAX_DIM]);
+    M = randi([1,MAX_DIM]);
     % Generate random matrices
     random_matrix_A = randi([Minnumber, Maxnumber], N, K);
     random_matrix_B = randi([Minnumber, Maxnumber], K, M);

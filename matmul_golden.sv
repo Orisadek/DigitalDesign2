@@ -77,9 +77,12 @@ task do_reset; begin
 		paddr_o  = 0;
 		row_data_o = 0;
 		col_data_o = 0;
-        // Open Stimulus files
+        
+		// Open Stimulus files
         open_files(); // Open only C file
-        // Reset done.
+        
+		
+		// Reset done.
 end endtask
 
 
@@ -111,7 +114,7 @@ module test;
     signed [BUS_WIDTH-1:0] matrixC [][]; // Declare dynamic array for matrix each element is BUS_WIDTH bits
     
     // Open the file for reading
-    open_files();
+    do_reset()
     
 	
 	
@@ -160,8 +163,8 @@ module test;
     
     // Close the file
     $fclose(file);
-  end
+	end
 endmodule
 
-endmodule
+
 
