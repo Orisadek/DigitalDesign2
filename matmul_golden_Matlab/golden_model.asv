@@ -14,11 +14,12 @@ fidC = fopen(MatrixC_file_name, 'w');
 fidMOD = fopen(Mod_file_name, 'w');
 
 %parameters
-DATA_WIDTH = 16;
-BUS_WIDTH = 64;
+DATA_WIDTH = 8;
+BUS_WIDTH = 32;
 ADDR_WIDTH = 32;
 MAX_DIM = BUS_WIDTH/DATA_WIDTH;
-num_matrices = 5;
+num_matrices = 15;
+SPN = 4;
 Maxnumber = 2^(DATA_WIDTH-1);
 Minnumber = -2^(DATA_WIDTH-1);
 history = {};
@@ -27,7 +28,7 @@ for i = 1:num_matrices
     N = randi([1,MAX_DIM]);
     K = randi([1,MAX_DIM]);
     M = randi([1,MAX_DIM]);
-    modbit = randi([1,1]);
+    modbit = randi([0,1]);
     
     % Generate random matrices
     random_matrix_A = randi([Minnumber, Maxnumber], N, K);
@@ -35,28 +36,26 @@ for i = 1:num_matrices
     random_matrix_C = random_matrix_A * random_matrix_B;
     
     if(modbit)
-        for index = 1:i 
-           
-                if(size(random_matrix_C)==size(history{index}))
-                    try
-                    display(history{index})
-                    random_matrix_C = random_matrix_C + history{index};
-                    fprintf(fidMOD, 'add saved matrix %d to the MatrixC', index);
-                    fprintf(fidMOD, '\n');   
-                    display(history{index})
-                    end
-                break
-                end
-        end
-            if (index == i)
-                modbit = 0;
-                fprintf(fidMOD, '0');
-                fprintf(fidMOD, '\n');
+        for index = 1:i           
+           try
+            if(size(random_matrix_C)==size(history{index}))
+                random_matrix_C = random_matrix_C + history{index};
+                fprintf(fidMOD, 'add saved matrix %d to the MatrixC, ', index);  
+                break 
             end
+           end
+        if(index == i)
+            modbit = 0;
+        end
+        end
       end
+
+    fprintf(fidMOD,'modbit = %d ',modbit);
+    fprintf(fidMOD, '\n');    
     
-    
-    history{end+1}  = random_matrix_C;
+    if size(history)<SPN
+        history{end+1}  = random_matrix_C;
+    end
 
     
 

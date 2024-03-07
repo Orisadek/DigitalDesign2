@@ -19,6 +19,7 @@ BUS_WIDTH = 32;
 ADDR_WIDTH = 32;
 MAX_DIM = BUS_WIDTH/DATA_WIDTH;
 num_matrices = 15;
+SPN = 4;
 Maxnumber = 2^(DATA_WIDTH-1);
 Minnumber = -2^(DATA_WIDTH-1);
 history = {};
@@ -51,7 +52,10 @@ for i = 1:num_matrices
 
     fprintf(fidMOD,'modbit = %d ',modbit);
     fprintf(fidMOD, '\n');    
-    history{end+1}  = random_matrix_C;
+    
+    if size(history)<SPN %Limmit the number of saved matrices to 4
+        history{end+1}  = random_matrix_C;
+    end
 
     
 
