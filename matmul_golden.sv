@@ -109,7 +109,7 @@ module test;
 	if(matrixC_File == "") $fatal(1, "matrixC_File is not set");
 	
 	first = 1;
-	
+	int error = 0;
     int rows, cols;
     signed [BUS_WIDTH-1:0] matrixC [][]; // Declare dynamic array for matrix each element is BUS_WIDTH bits
     
@@ -121,7 +121,6 @@ module test;
 	
 	// Loop until end of file
 	while (!$feof(matrixC_fd)) begin
-	  int error = 0;
       // Read dimensions of the matrix from the file
       if ($fscanf(matrixC_fd, "%d x %d", rows, cols) != 2) begin
         if(first) begin
