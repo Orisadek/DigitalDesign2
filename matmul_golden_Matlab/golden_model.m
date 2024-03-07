@@ -18,12 +18,14 @@ DATA_WIDTH = 8;
 BUS_WIDTH = 32;
 ADDR_WIDTH = 32;
 MAX_DIM = BUS_WIDTH/DATA_WIDTH;
-num_matrices = 15;
+num_of_random_matrices = 15;
+num_of_UF_matrices = 15;
+num_of_OF_matrices = 15;
 SPN = 4;
 Maxnumber = 2^(DATA_WIDTH-1);
 Minnumber = -2^(DATA_WIDTH-1);
 history = {};
-for i = 1:num_matrices
+for i = 1:num_of_random_matrices
     % Generate matrices size
     N = randi([1,MAX_DIM]);
     K = randi([1,MAX_DIM]);
@@ -62,9 +64,49 @@ for i = 1:num_matrices
 
     random_matrix_B = random_matrix_B';
     % Write the matrices to the files
+   
     % Save matrix A to file
+    fprintf(fidA, '%d x %d\n', N, K);
+    for row = 1:N
+        fprintf(fidA, '%f\t', random_matrix_A(row, :));
+        fprintf(fidA, '\n');
+    end
+    fprintf(fidA, '\n\n');
 
+    % Save matrix B to file
+    fprintf(fidB, '%d x %d\n', K, M);
+    %for row = 1:K %in order to print normal.
+    for row = 1:M  %in order to print transpose. 
+        fprintf(fidB, '%f\t', random_matrix_B(row, :));
+        fprintf(fidB, '\n');
+    end
+    fprintf(fidB, '\n\n');
 
+    % Save matrix C to file
+    fprintf(fidC, '%d x %d\n', N, M);
+    for row = 1:N
+        fprintf(fidC, '%f\t', random_matrix_C(row, :));
+        fprintf(fidC, '\n');
+    end
+    fprintf(fidC, '\n\n');
+    end
+    
+    %Underflow generate
+    
+    for i = 1:num_of_UF_matrices
+    % Generate matrices size    
+    N = randi([1,MAX_DIM]);
+    K = randi([1,MAX_DIM]);
+    M = randi([1,MAX_DIM]);    
+    % Generate random matrices
+    random_matrix_A = randi([Minnumber, Minnumber+1000], N, K);
+    random_matrix_B = randi([Maxnumber-1000, Maxnumber], K, M);
+    random_matrix_C = random_matrix_A * random_matrix_B;
+
+    random_matrix_B = random_matrix_B';
+    % Write the matrices to the files
+   
+    % Save matrix A to file
     fprintf(fidA, '%d x %d\n', N, K);
     for row = 1:N
         fprintf(fidA, '%f\t', random_matrix_A(row, :));
@@ -89,8 +131,48 @@ for i = 1:num_matrices
     end
     fprintf(fidC, '\n\n');
 
+    end
 
-end
+    %Overflow generate
+    for i = 1:num_of_OF_matrices
+    % Generate matrices size    
+    N = randi([1,MAX_DIM]);
+    K = randi([1,MAX_DIM]);
+    M = randi([1,MAX_DIM]);    
+    % Generate random matrices
+    random_matrix_A = randi([Maxnumber-1000, Maxnumber], N, K);
+    random_matrix_B = randi([Maxnumber-1000, Maxnumber], K, M);
+    random_matrix_C = random_matrix_A * random_matrix_B;
+
+    random_matrix_B = random_matrix_B';
+    % Write the matrices to the files
+   
+    % Save matrix A to file
+    fprintf(fidA, '%d x %d\n', N, K);
+    for row = 1:N
+        fprintf(fidA, '%f\t', random_matrix_A(row, :));
+        fprintf(fidA, '\n');
+    end
+    fprintf(fidA, '\n\n');
+
+    % Save matrix B to file
+    fprintf(fidB, '%d x %d\n', K, M);
+    %for row = 1:K %in order to print normal.
+    for row = 1:M  %in order to print transpose. 
+        fprintf(fidB, '%f\t', random_matrix_B(row, :));
+        fprintf(fidB, '\n');
+    end
+    fprintf(fidB, '\n\n');
+
+    % Save matrix C to file
+    fprintf(fidC, '%d x %d\n', N, M);
+    for row = 1:N
+        fprintf(fidC, '%f\t', random_matrix_C(row, :));
+        fprintf(fidC, '\n');
+    end
+    fprintf(fidC, '\n\n');
+
+    end
 % Close the file
 fclose(fidA);
 fclose(fidB);
