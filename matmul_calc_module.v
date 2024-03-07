@@ -22,7 +22,7 @@ output finish_mul_o,enable_w_o; // output matrix is actually long matrix
 output data_o;
 output address_o;
 output flags_o;
-//-----------------parameters-----------------------------------------
+//-----------------parameters-----------------------------------------//
 parameter DATA_WIDTH = 8; // data width
 parameter BUS_WIDTH = 16; // bus width
 parameter ADDR_WIDTH = 32; // addr width
@@ -30,7 +30,7 @@ localparam MAX_DIM = BUS_WIDTH/DATA_WIDTH; // max dim of the matrix
 localparam  [4:0]   OPERAND_A = 5'b00100,
 				    OPERAND_B = 5'b01000,
 					OPERAND_C = 5'b10000;
-//-----------------variables------------------------------------------
+//-----------------variables------------------------------------------//
 wire clk_i,rst_ni,start_i,mode_i;// clock , reset , start bit from control
 wire [1:0] n_dim_i,k_dim_i,m_dim_i; // matrix A is NxK , matrix B KxM
 wire signed [BUS_WIDTH-1:0] data_a_i,data_b_i,data_c_i;
@@ -57,127 +57,133 @@ wire startBit;
 reg startBitA,startBitB,startBitC;
 //-----------------------------matmul unit-----------------------------------//
 matrix_multiple_module #(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH)) U_matmul(
-   .clk_i      (clk_i), // clk
-   .rst_ni     (rst_ni),// reset
-   .n_dim_i    (n_dim_i), // n dim of the matrix
-   .k_dim_i    (k_dim_i), // k dim of the matrix
-   .m_dim_i    (m_dim_i), // m dim of the matrix
-   .start_i    (startBit), // start bit from the control
-   .a_matrix_i (a_matrix), // matrix a as long vector - input
-   .b_matrix_i (b_matrix), // matrix b as long vector - input
-   .c_matrix_i (c_bias),
-   .mode_bit_i(mode_i),
-   .c_matrix_o (cMatrixWire), // // matrix c as long vector - output
-   .flags_o    (flagsLocal), // flags for overflow
+   .clk_i        (clk_i), // clk
+   .rst_ni       (rst_ni),// reset
+   .n_dim_i      (n_dim_i), // n dim of the matrix
+   .k_dim_i      (k_dim_i), // k dim of the matrix
+   .m_dim_i      (m_dim_i), // m dim of the matrix
+   .start_i      (startBit), // start bit from the control
+   .a_matrix_i   (a_matrix), // matrix a as long vector - input
+   .b_matrix_i   (b_matrix), // matrix b as long vector - input
+   .c_matrix_i   (c_bias),  // c bias matrix
+   .mode_bit_i   (mode_i),  // mode bit - with add or without
+   .c_matrix_o   (cMatrixWire), // // matrix c as long vector - output
+   .flags_o      (flagsLocal), // flags for overflow
    .finish_mul_o (finishMulWire), // write to start to de assert
-   .finish_write_i(finishWrite)
+   .finish_write_i(finishWrite) // finish writing C to SP
 ); 
 
 
-assign startBit = startBitA && startBitB && startBitC;
+assign startBit = startBitA && startBitB && startBitC; // start matmul -after get A,B,C
 	
-always@(posedge clk_i or negedge rst_ni)
+//----------------------------------------get MatA----------------------------------------------------//
+always@(posedge clk_i or negedge rst_ni) 
 	begin:get_data_matA
-		if(~rst_ni)
+		if(~rst_ni) // reset - init variables
 			begin
-				addrLogA    <= 0;
-				startBitA   <= 1'b0;
-				a_matrix_local <= 0;
+				addrLogA       <= {($clog2(MAX_DIM)+1){1'b0}};
+				startBitA      <= 1'b0;
+				a_matrix_local <= {(MAX_DIM*MAX_DIM*DATA_WIDTH){1'b0}}; 
 			end
 		else
 			begin
-				if(start_i)
+				if(start_i) // if start bit is up
 					begin
-						if(addrLogA == n_dim_i)
+						if(addrLogA == n_dim_i) // in the last read
 							begin
-								a_matrix_local[((addrLogA+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_a_i;
-								addrLogA <= addrLogA + 1;
-								startBitA <= 1'b1;
+								a_matrix_local[((addrLogA+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_a_i;  // insert data in
+								addrLogA  <= addrLogA + 1; // inc addr
+								startBitA <= 1'b1; // finish to read A
 							end
-						else if (addrLogA < n_dim_i)
+						else if (addrLogA < n_dim_i) // read to addr addrLogA
 							begin
-								a_matrix_local[((addrLogA+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_a_i;
-								addrLogA <= addrLogA + 1;
+								a_matrix_local[((addrLogA+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_a_i;  // insert data in
+								addrLogA <= addrLogA + 1;  // inc addr
 							end
 					end						
-				else
-					begin
-						startBitA <= 1'b0;
-						addrLogA  <= 0;
+				else // reset variables after start = 0
+					begin // start bit = 0
+						startBitA      <= 1'b0;
+						addrLogA       <= 0;
 						a_matrix_local <= 0;
 					end
 						
 			end
 	end
-	
+
+//----------------------------------------get MatB----------------------------------------------------//
+
 always@(posedge clk_i or negedge rst_ni)
 	begin:get_data_matB
-		if(~rst_ni)
+		if(~rst_ni) // reset - init variables
 			begin
-				addrLogB    <= 0;
-				startBitB   <= 1'b0;
-				b_matrix_local <= 0;
+				addrLogB       <= {($clog2(MAX_DIM)+1){1'b0}};
+				startBitB      <= 1'b0;
+				b_matrix_local <= {(MAX_DIM*MAX_DIM*DATA_WIDTH){1'b0}};
 			end
 		else
 			begin
-				if(start_i)
+				if(start_i)// if start bit is up
 					begin
-						if(addrLogB == m_dim_i)
+						if(addrLogB == m_dim_i)// in the last read
 							begin
-								b_matrix_local[((addrLogB+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_b_i;
-								addrLogB <= addrLogB + 1;
-								startBitB <= 1'b1;
+								b_matrix_local[((addrLogB+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_b_i;  // insert data in
+								addrLogB <= addrLogB + 1;  // inc addr
+								startBitB <= 1'b1;  // finish to read B
 							end
-						else if(addrLogB < m_dim_i)
+						else if(addrLogB < m_dim_i) // read to addr addrLogB
 							begin
-								b_matrix_local[((addrLogB+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_b_i;
-								addrLogB <= addrLogB + 1;
+								b_matrix_local[((addrLogB+1)*MAX_DIM*DATA_WIDTH-1)-:BUS_WIDTH] <= data_b_i;  // insert data in
+								addrLogB <= addrLogB + 1; // inc addr
 							end
 					end						
 				else
-					begin
-						startBitB <= 1'b0;
-						addrLogB  <= 0;
+					begin // reset variables after start = 0
+						startBitB      <= 1'b0;
+						addrLogB       <= 0;
 						b_matrix_local <= 0;
 					end
 						
 			end
 	end
 	
+//----------------------------------------get MatC----------------------------------------------------//
+
 always@(posedge clk_i or negedge rst_ni)
 	begin:get_data_matC
-		if(~rst_ni)
+		if(~rst_ni) // reset - init variables
 			begin
-				addrLogC    <= 0;
-				startBitC   <= 1'b0;
-				c_bias_local <= 0 ;
+				addrLogC     <= {(2*$clog2(MAX_DIM)+1){1'b0}};
+				startBitC    <= 1'b0;
+				c_bias_local <= {(MAX_DIM*MAX_DIM*BUS_WIDTH){1'b0}};
 			end
 		else
 			begin
-				if(start_i)
+				if(start_i) // if start bit is up
 					begin
-						if(addrLogC == (n_dim_i+1)*(m_dim_i+1)-1)
+						if(addrLogC == (n_dim_i+1)*(m_dim_i+1)-1)// in the last read
 							begin
-								c_bias_local[((addrLogC+1)*BUS_WIDTH-1)-:BUS_WIDTH] <= data_c_i;
-								startBitC <= 1'b1;
-								addrLogC <= addrLogC + 1;
+								c_bias_local[((addrLogC+1)*BUS_WIDTH-1)-:BUS_WIDTH] <= data_c_i; // insert data in
+								startBitC <= 1'b1; // finish to read C
+								addrLogC <= addrLogC + 1;  // inc addr
 							end
-						else if(addrLogC < (n_dim_i+1)*(m_dim_i+1)-1)
+						else if(addrLogC < (n_dim_i+1)*(m_dim_i+1)-1) // read to addr addrLogC
 							begin
-								c_bias_local[((addrLogC+1)*BUS_WIDTH-1)-:BUS_WIDTH] <= data_c_i;
-								addrLogC <= addrLogC + 1;
+								c_bias_local[((addrLogC+1)*BUS_WIDTH-1)-:BUS_WIDTH] <= data_c_i;  // insert data in
+								addrLogC <= addrLogC + 1; // inc addr
 							end
 					end						
 				else
-					begin
-						startBitC <= 1'b0;
-						addrLogC  <= 0;
+					begin // reset variables after start = 0
+						startBitC    <= 1'b0;
+						addrLogC     <= 0;
 						c_bias_local <= 0 ;
 					end
 						
 			end
 	end
-//---------------------------get a,b matrices----------------------------------//
+
+//---------------------------assign a,b matrices----------------------------------//
 
 genvar indexMat,indexMatCGen; // b variable
 generate  // grenerate the block
@@ -189,7 +195,7 @@ generate  // grenerate the block
 		end
 endgenerate
 
-//---------------------------get c bias----------------------------------//
+//---------------------------assign c bias----------------------------------//
 generate  // grenerate the block
 	for(indexMatCGen = 0;indexMatCGen < MAX_DIM*MAX_DIM;indexMatCGen = indexMatCGen + 1)
 		begin
@@ -197,7 +203,7 @@ generate  // grenerate the block
 		end
 endgenerate
 
-//--------------------------write data---------------------------------//
+//--------------------------write data C ---------------------------------//
 
 always @(posedge clk_i or negedge rst_ni)// sensitivity list
 	begin:write_out_matmul
@@ -205,7 +211,7 @@ always @(posedge clk_i or negedge rst_ni)// sensitivity list
 			begin
 				data_o       <= {(BUS_WIDTH){1'b0}};			
 				finishWrite  <= 1'b0;	
-				indexByte   <= {(2*$clog2(MAX_DIM)+1){1'b0}};		
+				indexByte   <= {(2*$clog2(MAX_DIM)+1){1'b0}};	
 				enable_w_o   <= 1'b0;
 				finish_mul_o <= 1'b0;
 				address_o 	 <= {(ADDR_WIDTH){1'b0}};
@@ -235,8 +241,6 @@ always @(posedge clk_i or negedge rst_ni)// sensitivity list
 				indexByte   <= {(2*$clog2(MAX_DIM)+1){1'b0}};
 			end
 	end
-
-
 
 assign flags_o = {{(BUS_WIDTH-MAX_DIM*MAX_DIM){1'b0}},flagsLocal};
 

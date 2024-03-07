@@ -13,12 +13,13 @@
 module register_file_module(clk_i,rst_ni,address_i,data_i,data_flags_i,
 write_enable_i,strobe_i,sp_enable_i,start_bit_i,n_dim_o,k_dim_o,m_dim_o,
 mode_bit_o,start_bit_o,data_o,data_a_o,data_b_o,data_c_o);
-
+//-----------------------------ports----------------------------------------------//
 input clk_i,rst_ni,address_i;
 input data_i,write_enable_i,data_flags_i,start_bit_i;
 input sp_enable_i,strobe_i;
 output n_dim_o,k_dim_o,m_dim_o;
 output mode_bit_o,start_bit_o,data_o,data_a_o,data_b_o,data_c_o;
+//----------------------------parameters-----------------------------------------//
 parameter  DATA_WIDTH = 32; // data width
 parameter  BUS_WIDTH = 64; // bus width
 parameter  ADDR_WIDTH = 32; // addr width
@@ -33,7 +34,7 @@ localparam [4:0] CONTROL    = 5'b00000, // Control address
 				 SP1 		= 5'b10100, // SP address
 				 SP2 		= 5'b11000, // SP address
 				 SP3 		= 5'b11100; // SP address
-
+//----------------------------variables------------------------------------------//
 wire signed [BUS_WIDTH-1:0] dataOpA,dataOpB,dataSp;
 wire [BUS_WIDTH-1:0] dataFlags;
 wire [CONTROL_WIDTH-1:0] dataCtrl;
@@ -47,11 +48,12 @@ wire [1:0] writeTarget,readTarget;
 wire [1:0] n_dim_o,k_dim_o,m_dim_o;
 wire mode_bit_o,start_bit_o;
 reg signed [BUS_WIDTH-1:0] data_o,data_a_o,data_b_o,data_c_o;
-
+//------------------------------assign data-----------------------------------//
 assign  data_a_o = dataOpA;
 assign  data_b_o = dataOpB;
 assign  data_c_o = dataSp;
 
+//-----------------------------comb always - FSM-----------------------------------//
 always@(*)
 begin:begin_switch_case
 	case(address_i[4:0])  // current state

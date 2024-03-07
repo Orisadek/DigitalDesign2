@@ -34,31 +34,31 @@ for i = 1:num_matrices
     random_matrix_A = randi([Minnumber, Maxnumber], N, K);
     random_matrix_B = randi([Minnumber, Maxnumber], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
-    
+
     if(modbit)
         for index = 1:i           
            try
             if(size(random_matrix_C)==size(history{index}))
                 random_matrix_C = random_matrix_C + history{index};
-                fprintf(fidMOD, 'add saved matrix %d to the MatrixC, ', index);  
+                fprintf(fidMOD, 'modbit = %d matrix %d', modbit,index);  
+                fprintf(fidMOD, '\n');  
                 break 
             end
            end
         if(index == i)
             modbit = 0;
+            fprintf(fidMOD,'modbit = %d',modbit);
+            fprintf(fidMOD, '\n'); 
         end
-        end
-      end
+        end 
+    else
+        fprintf(fidMOD,'modbit = %d',modbit);
+        fprintf(fidMOD, '\n');   
+    end
 
-    fprintf(fidMOD,'modbit = %d ',modbit);
-    fprintf(fidMOD, '\n');    
-    
     if size(history)<SPN %Limmit the number of saved matrices to 4
         history{end+1}  = random_matrix_C;
     end
-
-    
-
 
     random_matrix_B = random_matrix_B';
     % Write the matrices to the files
@@ -88,7 +88,6 @@ for i = 1:num_matrices
         fprintf(fidC, '\n');
     end
     fprintf(fidC, '\n\n');
-
 
 end
 % Close the file

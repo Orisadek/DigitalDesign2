@@ -18,8 +18,8 @@ matmul_intf intf(
 );
 // Init clock process
 initial forever 
-	//#(CLK_NS/2) clk_i = ~clk_i;
-	#(5) clk_i = ~clk_i;
+	#(CLK_NS/2) clk_i = ~clk_i;
+	//#(5) clk_i = ~clk_i;
 // Init reset process
 initial begin: TOP_RST
 	rst_ni = 1'b1; // Assert reset

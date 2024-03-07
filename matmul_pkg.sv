@@ -10,22 +10,19 @@
 
 package matmul_pkg;
 	// DUT Params
-  parameter int unsigned DATA_WIDTH = 8; // data width
-  parameter int unsigned BUS_WIDTH = 32; // bus width
+  parameter int unsigned DATA_WIDTH = 16; // data width
+  parameter int unsigned BUS_WIDTH = 64; // bus width
   parameter int unsigned ADDR_WIDTH = 32; // address width
   localparam unsigned    MAX_DIM = BUS_WIDTH/DATA_WIDTH;
-  parameter int unsigned SP_NTARGETS = 1;
-  parameter int unsigned N = 2; // the rows on matrix A
-  parameter int unsigned K = 4; // the colms of matrix A and the Rows of matrix B
-  parameter int unsigned M = 1; // the colms of matrix B
-  
+  parameter int unsigned SP_NTARGETS = 4;
+ 
   typedef logic [DATA_WIDTH-1:0] matA [MAX_DIM-1:0][MAX_DIM-1:0];
   typedef logic [DATA_WIDTH-1:0] matB [MAX_DIM-1:0][MAX_DIM-1:0];
   typedef logic [BUS_WIDTH-1:0]  matc [MAX_DIM-1:0][MAX_DIM-1:0];
   
   
 	// TB Params
-	localparam time CLK_NS = 10ns;
+  localparam int unsigned CLK_NS = 10;
 	localparam int unsigned RST_CYC = 3;
 
 endpackage

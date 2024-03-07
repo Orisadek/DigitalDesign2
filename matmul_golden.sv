@@ -11,7 +11,8 @@ module matmul_golden #(
 ) (
     matmul_intf.GOLDEN    intf,
 	input wire stim_done_i,
-    output logic golden_done_o
+    output logic golden_done_o,
+	output logic golden_done_iteration_o
 );
 
 	import matmul_pkg::*;   
@@ -21,9 +22,8 @@ module matmul_golden #(
 	logic [BUS_WIDTH-1:0] MatC_rows_o ;
     logic [BUS_WIDTH-1:0] C_temp;
 	
-	
     // Interface signals connect to internal decl'	
-	
+	wire [BUS_WIDTH-1:0] data_i [MAX_DIM-1:0][MAX_DIM-1:0] = intf.dataSp;
     wire clk_i     = intf.clk_i;
     wire rst_ni    = intf.rst_ni;
 
@@ -52,10 +52,11 @@ initial begin:GOLDEN_MODEL
 	if(matrixC_File == "") $fatal(1, "matrixC_File is not set");
     // Open the file for reading
     do_reset();
-	wait(stim_done_i == 1'b1);
 	// Loop until end of file
 	while (!$feof(matrixC_fd)) 
 		begin
+		golden_done_iteration_o = 0;
+		wait(stim_done_i == 1'b1);
       // Read dimensions of the matrix from the file
 			if ($fscanf(matrixC_fd, "%d x %d", rows, cols) != 2) 
 				begin
@@ -84,17 +85,16 @@ initial begin:GOLDEN_MODEL
 					for (int j = 0; j < cols; j++)
 						begin
 						//bringing the C result from the SP.
-						//	apb_READ(SP,i);
-							//C_temp = prdata_i;
 						//compare MATLAB matrixC[i][j] to our intf.
-							if(C_temp != matrixC[i][j])
+							if(data_i[i][j] != matrixC[i][j])
 								begin
 									errors++;
-									$display("Error, the number in GOLDEN does not match the number in Sp, epected to read %d and instead read %d",matrixC[i][j],C_temp);
+									$display("Error, the number in GOLDEN does not match the number in Sp, epected to read %d and instead read %d",matrixC[i][j],data_i[i][j]);
 								end
 						end
 				end
 			$display("There are %d errors",errors);
+			golden_done_iteration_o = 1'b1;
 		end
 	$fclose(matrixC_fd);
 	end

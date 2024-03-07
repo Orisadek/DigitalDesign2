@@ -14,6 +14,7 @@ module matmul_stimulus #(
     parameter string matrixA_File = "",
     parameter string matrixB_File = "",
     parameter string matrixC_File = "",
+	parameter string modes_File = "",
 	localparam [4:0] CONTROL    = 5'b00000, // Control address
 					 OPERAND_A  = 5'b00100, // Operand-A address
 					 OPERAND_B  = 5'b01000, // Operand-B address
@@ -24,10 +25,12 @@ module matmul_stimulus #(
 					 SP3 		= 5'b11100 // SP address
 ) (
     matmul_intf.STIMULUS    intf,
-	output logic stim_done_o
+	output logic stim_done_o,
+	input logic golden_done_i
 );
-    import matmul_pkg::*;   
-    integer matrixA_fd,matrixB_fd,matrixC_fd;
+    import matmul_pkg::*;  
+	//---------------------------------variables---------------------------------------// 
+    integer matrixA_fd,matrixB_fd,matrixC_fd,modes_fd;
     integer MatrixA_rows,MatrixA_colms;
     integer MatrixB_rows,MatrixB_colms;
     integer MatrixC_rows,MatrixC_colms;
@@ -36,22 +39,20 @@ module matmul_stimulus #(
     logic [BUS_WIDTH-1:0] colData ;
 	logic [DATA_WIDTH-1:0] row_data_cell;
 	logic [DATA_WIDTH-1:0] col_data_cell;
-	 
-    // Interface signals connect to internal decl'	
-	
+	logic  modeBit;
+	logic [1:0] writeTarget;
+	logic [1:0] readTarget;
+	reg stim_valid;
+	string row_data_cell_str;
+	string col_data_cell_str;
+    //--------------------------------interface connection----------------------------//	
     wire clk_i     = intf.clk_i;
     wire rst_ni    = intf.rst_ni;
-	
 	wire pready_i  = intf.pready_o;
 	wire pslverr_i = intf.pslverr_o;
 	wire prdata_i  = intf.prdata_o;
 	wire busy_i    = intf.busy_o;
   
-	reg stim_valid;
-	
-	string row_data_cell_str;
-	string col_data_cell_str;
-	 
 	logic psel_o;
 	logic penable_o;
 	logic pwrite_o;
@@ -59,6 +60,8 @@ module matmul_stimulus #(
 	logic [BUS_WIDTH-1:0]  pwdata_o;
 	logic [ADDR_WIDTH-1:0] paddr_o;
 	logic [BUS_WIDTH-1:0] data_o [MAX_DIM-1:0][MAX_DIM-1:0];
+
+	//----------------------------assign interface signals----------------------------//
 	assign intf.dataSp    = data_o;
 	assign intf.psel_i	  = psel_o;
 	assign intf.penable_i = penable_o;
@@ -67,19 +70,21 @@ module matmul_stimulus #(
     assign intf.pwdata_i  = pwdata_o;
     assign intf.paddr_i   = paddr_o;
 	
-	
+//-----------------------------tasks---------------------------------------------------//	
+//-----------------------------open files----------------------------------------------//
  task open_files(); 
     begin
         matrixA_fd = $fopen(matrixA_File, "r");
         if(matrixA_fd == 0) $fatal(1, $sformatf("Failed to open %s", matrixA_File));
         matrixB_fd = $fopen(matrixB_File, "r");
         if(matrixB_fd == 0) $fatal(1, $sformatf("Failed to open %s", matrixB_File));
-       // matrixC = $fopen(matrixC, "r");
-      //  if(matrixA == 0) $fatal(1, $sformatf("Failed to open %s", matrixC_File));                       
+		 modes_fd = $fopen(modes_File, "r");
+        if(modes_fd == 0) $fatal(1, $sformatf("Failed to open %s", modes_fd));
+                          
     end 
  endtask
 
-
+//--------------------------read matrix B cell --------------------------------------//
 task read_data_B(input integer i, input integer j); begin
 	logic [DATA_WIDTH-1:0] col_data_cell_temp;
 	$display(i,j,"i,j read_data_B");
@@ -91,6 +96,7 @@ task read_data_B(input integer i, input integer j); begin
 	colData[((j+1)*DATA_WIDTH-1)-:DATA_WIDTH] = col_data_cell_temp;
 end endtask
 
+//--------------------------read matrix A cell --------------------------------------//
 task read_data_A(input integer i, input integer j); begin
 	logic signed [DATA_WIDTH-1:0] row_data_cell_temp;
 	if($fscanf(matrixA_fd, "%s[^\n]", row_data_cell_str) != 1) 
@@ -101,25 +107,37 @@ task read_data_A(input integer i, input integer j); begin
 	rowData[(DATA_WIDTH*(j+1)-1)-:DATA_WIDTH] = row_data_cell_temp;
 end endtask
 
-
-
+//------------------------set data variables ----------------------------------------//
  task set_data(); 
   begin
        //check all 3 files headers of the matrices First line is Matrices dimensions in syntext format of N x K
-        //-----------------MatrixA file------------
+        //-----------------MatrixA file------------//
 		if($fscanf(matrixA_fd, "%d x %d\n", MatrixA_rows, MatrixA_colms) != 2) begin  //if the first row is not 2 numbers and they are no
 			$fatal(1, "Failed to read the size line of matrixA_FILE");
             $fclose(matrixA_fd);
         end
 		  $display(MatrixA_rows,"MatrixA_rows");
-       //-----------------MatrixB file------------    
+       //-----------------MatrixB file------------ //  
         if($fscanf(matrixB_fd, "%d x %d\n", MatrixB_rows, MatrixB_colms) != 2) begin
             $fatal(1, "Failed to read the size line of MatrixB_FILE");
             $fclose(matrixB_fd);
-        end   
+        end  
+       //-----------------Modes file------------ //  
+		if($fscanf(modes_fd, "%d x %d\n", modeBit, writeTarget) != 2) begin
+            $fatal(1, "Failed to read the size line of Mode_FILE");
+            $fclose(modes_fd);
+        end  
+		if(mode_bit) begin
+			($fscanf(modes_fd, "%d x %d\n", readTarget) != 1)begin
+				$fatal(1, "Failed to read the size line of Mode_FILE");
+				$fclose(modes_fd);
+			end  
+		end
+		
  end
    endtask
 
+//----------------------------------do reset --------------------------------------------------//
 task do_reset; begin
         psel_o    = 1'b0;;
 		penable_o = 1'b0;
@@ -135,12 +153,13 @@ task do_reset; begin
         // Reset done.
 end endtask
 
-task apb_read(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM):0] line,output bit [BUS_WIDTH-1:0] data);
+//---------------------------------read data----------------------------------------------------//
+task apb_read(input bit [4:0] module_mem,input bit [2*$clog2(MAX_DIM):0] line,output bit [BUS_WIDTH-1:0] data);
 	begin
 		psel_o       = 1'b1;
 		pwrite_o     = 1'b0;
 		paddr_o[4:0] = module_mem; 
-		paddr_o[5+:$clog2(MAX_DIM)] = line;
+		paddr_o[5+:2*$clog2(MAX_DIM)] = line;
 		@(posedge clk_i)
 		penable_o    = 1'b1;
 		pstrb_o      = 4'b0000;
@@ -149,6 +168,7 @@ task apb_read(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM):0] line,outp
 		pwrite_o     = 1'b0;  
 end endtask	
 
+//---------------------------------write data------------------------------------------------------//
 task apb_write(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM)-1:0] line,input bit [BUS_WIDTH-1:0] data);
 	begin
 		wait(pslverr_i == 1'b0);
@@ -169,6 +189,7 @@ task apb_write(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM)-1:0] line,i
 		pstrb_o      = 4'b0000;
 end endtask
 
+//--------------------------------write to control-----------------------------------------------------//
 task control_write(input bit start_bit,input bit mode_bit ,input bit [1:0] write_target,input bit [1:0] read_target,
 					input bit [1:0] n,input bit [1:0] k,input bit [1:0] m);
 	begin
@@ -183,8 +204,8 @@ task control_write(input bit start_bit,input bit mode_bit ,input bit [1:0] write
 			@(posedge clk_i)apb_write(CONTROL,{($clog2(MAX_DIM)){1'b0}},control_bit);
 end endtask
 
-// stim_valid init 1 in rst , 0 in EOF
-// bind - try to use 
+//----------------------------------Init block------------------------------------------------------//
+
  initial begin: INIT_STIM
         // Initial checks
         if(matrixA_File == "") $fatal(1, "matrixA_File is not set");
@@ -195,6 +216,7 @@ end endtask
 		wait (rst_ni == 1'b1);
         // Start Image Stimulus
         while(stim_valid == 1 && $feof(matrixB_fd) == 0 && $feof(matrixA_fd)== 0) begin
+		
 			set_data(); // First must succeed
             for(int i=0; i < MatrixA_rows; i=i+1) begin
                 for(int j=0; j < MatrixA_colms; j=j+1) begin
@@ -212,13 +234,21 @@ end endtask
                 $display("Finished Col %0d", i);
 				@(posedge clk_i)apb_write(OPERAND_B,i,colData);
             end
-			 control_write(1'b1,1'b0 ,2'b00,2'b00,
+			 control_write(1'b1,mode_bit ,write_target,read_target,
 					MatrixA_rows-1,MatrixA_colms-1,MatrixB_colms-1);
 			wait(busy_i == 1'b0);
-			stim_done_o = 1;
 			rowData   = {(BUS_WIDTH){1'b0}};
 			colData   = {(BUS_WIDTH){1'b0}};
-		//	apb_read(SP0,input bit [$clog2(MAX_DIM):0] line,output bit [BUS_WIDTH-1:0] data)
+			for(int i = 0 ; i <MAX_DIM;i = i+1)
+				begin
+					for(int j = 0 ; j <MAX_DIM;j = j+1)
+						begin
+							 apb_read(SP0,i*MAX_DIM+j,data_o[i][j]);
+						end
+				end
+			stim_done_o = 1;
+			wait(golden_done_i == 1);
+			stim_done_o = 0;
          //   img_done_o = 1'b1;
          //   @(posedge clk) img_done_o = 1'b0;
         end

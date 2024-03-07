@@ -12,12 +12,14 @@
 `timescale 1ns/10ps
 module sp_module (clk_i,rst_ni,write_enable_i,address_i,data_i,mode_i,start_send_i,write_target_i,
 read_target_i,mat_num_i,data_o); //descripition for all inputs\outputs
+//-----------------------------ports----------------------------------------------//
 input clk_i,rst_ni,mat_num_i; // clk,reset
 input write_enable_i,mode_i; // enable writing to operands
 input address_i; // adress of writing (for line/col)
 input data_i,start_send_i; //the data we want to write
 input read_target_i,write_target_i;
 output data_o; // the data we read (line/col)
+//----------------------------parameters-----------------------------------------//
 parameter  SP_NTARGETS = 4; //The number of addressable targets in sp
 parameter  DATA_WIDTH  = 32; // data width
 parameter  BUS_WIDTH   = 64; // bus width
@@ -41,6 +43,7 @@ wire [2*$clog2(MAX_DIM)-1:0] addrWireOut;
 wire [1:0] addrWireMatOut;
 wire [1:0] mat_num_i;
 
+//-------------------------------insert data---------------------------------------//
 always @(posedge clk_i or negedge rst_ni) 
 	begin: writing_to_sp // we want it to activate during clk or rst
 		if (~rst_ni) //add reset
@@ -56,6 +59,7 @@ always @(posedge clk_i or negedge rst_ni)
 		end
 end
 
+//--------------------------------read data ----------------------------------------//
 always@(posedge clk_i or negedge rst_ni)
 	begin:send_address_sp		
 		if(~rst_ni)
