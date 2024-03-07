@@ -39,7 +39,7 @@ for i = 1:num_matrices
            try
             if(size(random_matrix_C)==size(history{index}))
                 random_matrix_C = random_matrix_C + history{index};
-                fprintf(fidMOD, 'add saved matrix %d to the MatrixC ,', index);  
+                fprintf(fidMOD, 'add saved matrix %d to the MatrixC, ', index);  
                 break 
             end
            end
