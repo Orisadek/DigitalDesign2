@@ -22,6 +22,7 @@ num_of_random_matrices = 15;
 num_of_UF_matrices = 15;
 num_of_OF_matrices = 15;
 SPN = 4;
+temp = 0;
 Maxnumber = 2^(DATA_WIDTH-1);
 Minnumber = -2^(DATA_WIDTH-1);
 history = {};
@@ -42,26 +43,25 @@ for i = 1:num_of_random_matrices
            try
             if(size(random_matrix_C)==size(history{index}))
                 random_matrix_C = random_matrix_C + history{index};
-                fprintf(fidMOD, 'add saved matrix %d to the MatrixC, ', index);  
+                temp = index;
                 break 
             end
            end
         if(index == i)
             modbit = 0;
+            temp = 0;
         end
         end
       end
 
-    fprintf(fidMOD,'modbit = %d ',modbit);
-    fprintf(fidMOD, '\n');    
+    fprintf(fidMOD,'modbit = %d, ',modbit); 
     
-    if size(history)<SPN %Limmit the number of saved matrices to 4
-        history{end+1}  = random_matrix_C;
-    end
-
-    
-
-
+    random_SNP = randi([1,SPN]);
+    history{random_SNP}  = random_matrix_C;
+    fprintf(fidMOD,'write target %d, ',random_SNP);
+    fprintf(fidMOD, 'read target %d', temp);
+    fprintf(fidMOD, '\n');  
+   
     random_matrix_B = random_matrix_B';
     % Write the matrices to the files
    
@@ -91,18 +91,43 @@ for i = 1:num_of_random_matrices
     fprintf(fidC, '\n\n');
     end
     
-    %Underflow generate
-    
-    for i = 1:num_of_UF_matrices
-    % Generate matrices size    
+%----------generate for Underflow cases ----------
+   for i = 1:num_of_UF_matrices
+    % Generate matrices size
     N = randi([1,MAX_DIM]);
     K = randi([1,MAX_DIM]);
-    M = randi([1,MAX_DIM]);    
+    M = randi([1,MAX_DIM]);
+    modbit = randi([0,1]);
+    
     % Generate random matrices
     random_matrix_A = randi([Minnumber, Minnumber+1000], N, K);
     random_matrix_B = randi([Maxnumber-1000, Maxnumber], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
+    
+    if(modbit)
+        for index = 1:i           
+           try
+            if(size(random_matrix_C)==size(history{index}))
+                random_matrix_C = random_matrix_C + history{index};
+                temp = index;
+                break 
+            end
+           end
+        if(index == i)
+            modbit = 0;
+            temp = 0;
+        end
+        end
+      end
 
+    fprintf(fidMOD,'modbit = %d, ',modbit); 
+    
+    random_SNP = randi([1,SPN]);
+    history{random_SNP}  = random_matrix_C;
+    fprintf(fidMOD,'write target %d, ',random_SNP);
+    fprintf(fidMOD, 'read target %d', temp);
+    fprintf(fidMOD, '\n');  
+   
     random_matrix_B = random_matrix_B';
     % Write the matrices to the files
    
@@ -130,20 +155,46 @@ for i = 1:num_of_random_matrices
         fprintf(fidC, '\n');
     end
     fprintf(fidC, '\n\n');
+   end 
 
-    end
+%-----------generate for Overflow cases--------------
 
-    %Overflow generate
     for i = 1:num_of_OF_matrices
-    % Generate matrices size    
+    % Generate matrices size
     N = randi([1,MAX_DIM]);
     K = randi([1,MAX_DIM]);
-    M = randi([1,MAX_DIM]);    
+    M = randi([1,MAX_DIM]);
+    modbit = randi([0,1]);
+    
     % Generate random matrices
     random_matrix_A = randi([Maxnumber-1000, Maxnumber], N, K);
     random_matrix_B = randi([Maxnumber-1000, Maxnumber], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
+    
+    if(modbit)
+        for index = 1:i           
+           try
+            if(size(random_matrix_C)==size(history{index}))
+                random_matrix_C = random_matrix_C + history{index};
+                temp = index;
+                break 
+            end
+           end
+        if(index == i)
+            modbit = 0;
+            temp = 0;
+        end
+        end
+      end
 
+    fprintf(fidMOD,'modbit = %d, ',modbit); 
+    
+    random_SNP = randi([1,SPN]);
+    history{random_SNP}  = random_matrix_C;
+    fprintf(fidMOD,'write target %d, ',random_SNP);
+    fprintf(fidMOD, 'read target %d', temp);
+    fprintf(fidMOD, '\n');  
+   
     random_matrix_B = random_matrix_B';
     % Write the matrices to the files
    
@@ -171,9 +222,11 @@ for i = 1:num_of_random_matrices
         fprintf(fidC, '\n');
     end
     fprintf(fidC, '\n\n');
-
     end
-% Close the file
+
+
+
+    % Close the file
 fclose(fidA);
 fclose(fidB);
 fclose(fidC);
