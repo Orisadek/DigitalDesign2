@@ -16,8 +16,6 @@ matmul_stimulus #(
     .matrixB_File($sformatf("%sMatrixB.txt",RESOURCE_BASE))
 ) u_stim (
     .intf(intf)
-	//.clk_i      (clk_i),
-   // .rst_ni     (rst_ni)
     // TB Status
   
 );

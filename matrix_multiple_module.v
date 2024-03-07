@@ -145,8 +145,11 @@ always @(posedge clk_i or negedge rst_ni)
 		begin
 			for (index_b = 0; index_b < MAX_DIM; index_b = index_b[2*MAX_DIM:0] +1) // loop with index_a 
 				begin : Top  // start insert to reg the values
-					regMatB[index_b] <= (counter-index_b>=0 && counter-index_b<{{(2*MAX_DIM){1'b0}},m_dim_i+1} 
-					&& index_b < {{(2*MAX_DIM-1){1'b0}},k_dim_i+1})
+					$display("(c",counter-index_b>=0 && counter-index_b<{{(2*MAX_DIM){1'b0}},m_dim_i+1}&& index_b < {{(2*MAX_DIM-1){1'b0}},k_dim_i+1});
+					$display("b_matrix_i[]",b_matrix_i[((index_b*MATRIX_WORD)+((counter-index_b+1)*DATA_WIDTH)-1)-:DATA_WIDTH]);
+					$display("index_b",index_b);
+					regMatB[index_b] <= (counter-index_b>=0 && counter-index_b<{{(2*MAX_DIM){1'b0}},k_dim_i+1} 
+					&& index_b < {{(2*MAX_DIM-1){1'b0}},m_dim_i+1})
 					? // if the condition is true insert value 
 					b_matrix_i[((index_b*MATRIX_WORD)+((counter-index_b+1)*DATA_WIDTH)-1)-:DATA_WIDTH]
 					:

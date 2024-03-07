@@ -38,8 +38,8 @@ wire signed [(MAX_DIM*MAX_DIM*DATA_WIDTH)-1:0] a_matrix; // this matrix is actua
 reg signed [(MAX_DIM*MAX_DIM*DATA_WIDTH)-1:0] a_matrix_local; // this matrix is actually  long register
 wire signed [(MAX_DIM*MAX_DIM*DATA_WIDTH)-1:0] b_matrix; // this matrix is actually  long register
 reg signed [(MAX_DIM*MAX_DIM*DATA_WIDTH)-1:0] b_matrix_local; // this matrix is actually  long register
-reg [$clog2(MAX_DIM)-1:0] addrLogA,addrLogB;
-reg [2*$clog2(MAX_DIM)-1:0] addrLogC;
+reg [$clog2(MAX_DIM):0] addrLogA,addrLogB;
+reg [2*$clog2(MAX_DIM):0] addrLogC;
 wire signed [(MAX_DIM*MAX_DIM*BUS_WIDTH)-1:0] c_bias; // output matrix is actually long matrix
 reg  signed [(MAX_DIM*MAX_DIM*BUS_WIDTH)-1:0] c_bias_local; // output matrix is actually long matrix
 wire [(MAX_DIM*MAX_DIM) -1:0]  flagsLocal; // flags for overflow
@@ -51,7 +51,7 @@ wire finishMulWire;
 reg  finishWrite; // local variable for finishMulWire from the inside module
 wire signed [(MAX_DIM*MAX_DIM*BUS_WIDTH)-1:0] cMatrixWire; // output matrix is actually long matrix
 wire [BUS_WIDTH-1:0] flags_o;
-reg [2*$clog2(MAX_DIM)-1:0] indexByte;
+reg [2*$clog2(MAX_DIM):0] indexByte;
 reg overflowBit;
 wire startBit;
 reg startBitA,startBitB,startBitC;
@@ -202,7 +202,7 @@ always @(posedge clk_i or negedge rst_ni)// sensitivity list
 			begin
 				data_o       <= {(BUS_WIDTH){1'b0}};			
 				finishWrite  <= 1'b0;	
-				indexByte   <= {(2*$clog2(MAX_DIM)){1'b0}};		
+				indexByte   <= {(2*$clog2(MAX_DIM)+1){1'b0}};		
 				enable_w_o   <= 1'b0;
 				finish_mul_o <= 1'b0;
 				address_o 	 <= {(ADDR_WIDTH){1'b0}};

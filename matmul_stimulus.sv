@@ -28,8 +28,8 @@ module matmul_stimulus #(
     integer MatrixB_rows,MatrixB_colms;
     integer MatrixC_rows,MatrixC_colms;
 	
-    logic [BUS_WIDTH-1-1:0] row_data_o;
-    logic [BUS_WIDTH-1:0] col_data_o ;
+    logic [BUS_WIDTH-1-1:0] rowData;
+    logic [BUS_WIDTH-1:0] colData ;
 	logic [DATA_WIDTH-1:0] row_data_cell;
 	logic [DATA_WIDTH-1:0] col_data_cell;
 	 
@@ -83,17 +83,17 @@ task read_data_B(input integer i, input integer j); begin
 	 $sscanf(col_data_cell_str, "%0d", col_data_cell_temp);
 	$display("col_data_cell_str",col_data_cell_str);
 	$display("col_data_cell_temp %0b",col_data_cell_temp);
-	col_data_o[((i+1)*DATA_WIDTH+DATA_WIDTH*MatrixB_rows*j-1)-:DATA_WIDTH] = col_data_cell_temp;
+	colData[((j+1)*DATA_WIDTH-1)-:DATA_WIDTH] = col_data_cell_temp;
 end endtask
 
 task read_data_A(input integer i, input integer j); begin
-	logic [DATA_WIDTH-1:0] row_data_cell_temp;
+	logic signed [DATA_WIDTH-1:0] row_data_cell_temp;
 	if($fscanf(matrixA_fd, "%s[^\n]", row_data_cell_str) != 1) 
 				$fatal(1, $sformatf("Failed to read the %0dth data-line of MatA", i*BUS_WIDTH+j+1)); 
 	$sscanf(row_data_cell_str, "%0d", row_data_cell_temp);
 	$display(row_data_cell_str,"row_data_cell");
 	$display(row_data_cell_temp,"row_data_cell_temp");
-	row_data_o[(DATA_WIDTH*(i+1)+DATA_WIDTH*MatrixA_colms*j-1)-:DATA_WIDTH] = row_data_cell_temp;
+	rowData[(DATA_WIDTH*(j+1)-1)-:DATA_WIDTH] = row_data_cell_temp;
 end endtask
 
 
@@ -116,14 +116,14 @@ end endtask
    endtask
 
 task do_reset; begin
-        psel_o = 1'b0;;
+        psel_o    = 1'b0;;
 		penable_o = 1'b0;
-		pwrite_o = 1'b0;;
-		pstrb_o  = 0;
-		pwdata_o = 0;
-		paddr_o  = 0;
-		row_data_o = 0;
-		col_data_o = 0;
+		pwrite_o  = 1'b0;;
+		pstrb_o   = {(MAX_DIM){1'b0}};
+		pwdata_o  = {(BUS_WIDTH){1'b0}};
+		paddr_o   = {(ADDR_WIDTH){1'b0}};
+		rowData   = {(BUS_WIDTH){1'b0}};
+		colData   = {(BUS_WIDTH){1'b0}};
 		stim_valid = 1;
         // Open Stimulus files
         open_files(); // Open all 3
@@ -144,7 +144,7 @@ task apb_read(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM):0] line,outp
 		pwrite_o     = 1'b0;  
 end endtask	
 
-task apb_write(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM):0] line,input bit [BUS_WIDTH-1:0] data);
+task apb_write(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM)-1:0] line,input bit [BUS_WIDTH-1:0] data);
 	begin
 		wait(pslverr_i == 1'b0);
 		psel_o       = 1'b1;
@@ -155,12 +155,12 @@ task apb_write(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM):0] line,inp
 		@(posedge clk_i)
 		penable_o    = 1'b1;
 		pstrb_o      = 4'b1111;
-		//wait(pready_i==1);
+		wait(pready_i==1);
 		@(posedge clk_i)
 		#1
+		penable_o    = 1'b0;
 		psel_o       = 1'b0;
 		pwrite_o     = 1'b0;  
-		penable_o    = 1'b0;
 		pstrb_o      = 4'b0000;
 end endtask
 
@@ -175,7 +175,7 @@ task control_write(input bit start_bit,input bit mode_bit ,input bit [1:0] write
 			control_bit[9:8]= n;
 			control_bit[11:10]= k;
 			control_bit[13:12]= m;
-			@(posedge clk_i)apb_write(CONTROL,0,control_bit);
+			@(posedge clk_i)apb_write(CONTROL,{($clog2(MAX_DIM)){1'b0}},control_bit);
 end endtask
 
 /*
@@ -198,6 +198,7 @@ end
 		wait (rst_ni == 1'b1);
         // Start Image Stimulus
         while(stim_valid == 1 && ~$feof(matrixB_fd) && ~$feof(matrixA_fd)) begin
+		    $display("$feof(matrixB_fd) %0d $feof(matrixA_fd) %0d", $feof(matrixB_fd),$feof(matrixA_fd));
 			set_data(); // First must succeed
             for(int i=0; i < MatrixA_rows; i=i+1) begin
                 for(int j=0; j < MatrixA_colms; j=j+1) begin
@@ -205,7 +206,7 @@ end
                 end
               //  if( VERBOSE )
                  $display("Finished Row %0d", i);
-				@(posedge clk_i)apb_write(OPERAND_A,i,row_data_o);
+				@(posedge clk_i)apb_write(OPERAND_A,i,rowData);
             end
 			
 			for(int i=0; i < MatrixB_colms; i=i+1) begin
@@ -213,13 +214,11 @@ end
                    read_data_B(i,j);
                 end
                 $display("Finished Col %0d", i);
-				@(posedge clk_i)apb_write(OPERAND_B,i,col_data_o);
+				@(posedge clk_i)apb_write(OPERAND_B,i,colData);
             end
 			 control_write(1'b1,1'b0 ,2'b00,2'b00,
 					MatrixA_rows-1,MatrixA_colms-1,MatrixB_colms-1);
-			$display("write control");
 			wait(busy_i == 1'b0);
-          
          //   img_done_o = 1'b1;
          //   @(posedge clk) img_done_o = 1'b0;
         end
