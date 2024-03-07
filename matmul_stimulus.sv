@@ -123,16 +123,10 @@ end endtask
             $fclose(matrixB_fd);
         end  
        //-----------------Modes file------------ //  
-		if($fscanf(modes_fd, "%d x %d\n", modeBit, writeTarget) != 2) begin
+		if($fscanf(modes_fd, "modbit = %d, write target %d, read target %d \n", modeBit, writeTarget,readTarget) != 3) begin
             $fatal(1, "Failed to read the size line of Mode_FILE");
             $fclose(modes_fd);
         end  
-		if(mode_bit) begin
-			($fscanf(modes_fd, "%d x %d\n", readTarget) != 1)begin
-				$fatal(1, "Failed to read the size line of Mode_FILE");
-				$fclose(modes_fd);
-			end  
-		end
 		
  end
    endtask
@@ -156,6 +150,7 @@ end endtask
 //---------------------------------read data----------------------------------------------------//
 task apb_read(input bit [4:0] module_mem,input bit [2*$clog2(MAX_DIM):0] line,output bit [BUS_WIDTH-1:0] data);
 	begin
+		$display("apb_read %d ",module_mem);
 		psel_o       = 1'b1;
 		pwrite_o     = 1'b0;
 		paddr_o[4:0] = module_mem; 
@@ -210,6 +205,7 @@ end endtask
         // Initial checks
         if(matrixA_File == "") $fatal(1, "matrixA_File is not set");
         if(matrixB_File == "") $fatal(1, "matrixB_File is not set");
+		if(modes_File == "") $fatal(1, "modes_File is not set");
 		wait (rst_ni == 1'b0);
 	    do_reset();
         // Reset Done
@@ -234,7 +230,7 @@ end endtask
                 $display("Finished Col %0d", i);
 				@(posedge clk_i)apb_write(OPERAND_B,i,colData);
             end
-			 control_write(1'b1,mode_bit ,write_target,read_target,
+			 control_write(1'b1,modeBit ,writeTarget,readTarget,
 					MatrixA_rows-1,MatrixA_colms-1,MatrixB_colms-1);
 			wait(busy_i == 1'b0);
 			rowData   = {(BUS_WIDTH){1'b0}};
@@ -243,7 +239,13 @@ end endtask
 				begin
 					for(int j = 0 ; j <MAX_DIM;j = j+1)
 						begin
-							 apb_read(SP0,i*MAX_DIM+j,data_o[i][j]);
+							case(writeTarget)
+									2'b00:apb_read(SP0,i*MAX_DIM+j,data_o[i][j]);
+									2'b01:apb_read(SP1,i*MAX_DIM+j,data_o[i][j]);
+									2'b10:apb_read(SP2,i*MAX_DIM+j,data_o[i][j]);
+									2'b11:apb_read(SP3,i*MAX_DIM+j,data_o[i][j]);
+									default : apb_read(SP0,i*MAX_DIM+j,data_o[i][j]);
+							endcase
 						end
 				end
 			stim_done_o = 1;

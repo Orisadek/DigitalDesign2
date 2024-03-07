@@ -7,17 +7,18 @@ module matmul_tester #(
 );
 // Local declarations
 import matmul_pkg::*;
-logic  stim_done, golden_done_iteration;
+wire  stim_done, golden_done_iteration;
 wire rst_ni = intf.rst_ni;
 wire clk_i  = intf.clk_i;
 
 //----------------------------Units----------------------------------//
 matmul_stimulus #(
     .matrixA_File($sformatf("%sMatrixA.txt",RESOURCE_BASE)),
-    .matrixB_File($sformatf("%sMatrixB.txt",RESOURCE_BASE))
+    .matrixB_File($sformatf("%sMatrixB.txt",RESOURCE_BASE)),
+	.modes_File($sformatf("%sModFile.txt",RESOURCE_BASE))
 ) u_stim (
     .intf(intf),
-	.stim_done_o(stim_done)
+	.stim_done_o(stim_done),
 	.golden_done_i(golden_done_iteration)
     // TB Status
 );
