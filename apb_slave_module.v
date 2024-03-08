@@ -42,7 +42,7 @@ reg  [ADDR_WIDTH-1:0] address_o; // address out
 reg  pready_o;    // ready out and next
 reg  pslverr_o;   // error out and next
 reg  busy_o; // busy line
-reg  [BUS_WIDTH-1:0] prdata_o, prdata_next; // data out and next
+reg  [BUS_WIDTH-1:0] prdata_o; // data out and next
 wire [BUS_WIDTH-1:0] bus_mem_o; 
 reg  [1:0] current_state,next_state;   // current state and next
 wire start_bit_i;
@@ -163,13 +163,11 @@ begin: apb_clk
 		if(~rst_ni) //reset, go back to idle and reset all outputs.
     		begin
     			 current_state   <= IDLE; // state idle
-    			// prdata_o 	     <= {(BUS_WIDTH){1'b0}};   // out data 0
 				 address_o       <= {(ADDR_WIDTH){1'b0}}; // default address
     		end
 	  else 
 			 begin
 			   current_state   <= next_state; // move to next state
-    		 //  prdata_o 	   <= prdata_next; // move to next out data
 			   address_o 	   <= address_next; // next address
 			end
 end

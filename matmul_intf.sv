@@ -1,4 +1,5 @@
 interface matmul_intf(input logic clk_i, input logic rst_ni);
+	//------------------------------------------------ports------------------------------------------------------//
 	import matmul_pkg::*;
     logic psel_i;
 	logic penable_i;

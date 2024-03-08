@@ -25,13 +25,16 @@ wire signed [BUS_WIDTH-1:0] c_i; // value inputs
 reg  signed [DATA_WIDTH-1:0] a_o ,b_o; // value to move on to the next pe
 reg  signed [BUS_WIDTH-1:0] res_o; // result of matrix index
 reg overflowBit; // overflow bit out
-wire [BUS_WIDTH-1:0] resultMul,resultCalc;
+wire [BUS_WIDTH-1:0] resultMul,resultCalc,resultMulAdd;
 reg overflow_o;
 reg firstAcc;
-
+wire isOverflow1,isOverflow2;
 //----------------------------assign result comb----------------------------------------//
-assign resultMul = a_i * b_i + (mode_bit_i && ~firstAcc ? c_i: 0);
-assign resultCalc = resultMul + res_o;
+assign resultMul    = a_i * b_i; // multiple a and b
+assign resultMulAdd = resultMul + (mode_bit_i && ~firstAcc ? c_i: 0); // add 
+assign resultCalc   = resultMulAdd + res_o; // add with res
+assign isOverflow1  = mode_bit_i && ~firstAcc ? ((resultMul[BUS_WIDTH-1] == c_i[BUS_WIDTH-1])&& (resultMul[BUS_WIDTH-1] != resultMulAdd[BUS_WIDTH-1])) : 1'b0; // check if overflow cond1
+assign isOverflow2  = (resultMulAdd[BUS_WIDTH-1] == res_o[BUS_WIDTH-1]) && (resultCalc[BUS_WIDTH-1] != resultMulAdd[BUS_WIDTH-1]); // check if overflow cond2
 
 //----------------------------always block---------------------------------------------//
 always @(posedge clk_i or negedge rst_ni) // wake in rising edge of clock or falling edge of reset
@@ -41,24 +44,24 @@ begin : multiply_and_acc // start and init if needed
       a_o           <=  {(DATA_WIDTH){1'b0}}; // initialize A out
       b_o           <=  {(DATA_WIDTH){1'b0}}; // initialize B out
       res_o         <=  {(BUS_WIDTH){1'b0}}; // initialize result
-	    overflow_o    <=  1'b0; // init overflow
-	    firstAcc      <=  1'b0;
+	  overflow_o    <=  1'b0; // init overflow
+	  firstAcc      <=  1'b0;
     end
   else if(!start_i) // if start_i == 0
     begin 
-      a_o           <=  {(DATA_WIDTH){1'b0}}; // initialize A out
-      b_o           <=  {(DATA_WIDTH){1'b0}}; // initialize B out
-      res_o         <=  {(BUS_WIDTH){1'b0}}; // initialize result 
+        a_o           <=  {(DATA_WIDTH){1'b0}}; // initialize A out
+        b_o           <=  {(DATA_WIDTH){1'b0}}; // initialize B out
+        res_o         <=  {(BUS_WIDTH){1'b0}}; // initialize result 
 	    overflow_o    <=  1'b0; // init overflow
 	    firstAcc      <=  1'b0;
     end
   else
     begin  
-        {overflowBit,res_o}  <= resultCalc; // multiple the argument and add to result and overflow bit
-	    overflow_o         <= (res_o[BUS_WIDTH-1] == resultMul[BUS_WIDTH-1]) && (resultMul[BUS_WIDTH-1]!=resultCalc[BUS_WIDTH-1]);  
+        {overflowBit,res_o}<= resultCalc; // multiple the argument and add to result and overflow bit
+	    overflow_o         <= isOverflow1 || isOverflow2 || overflow_o;  // if cond ==1 or prev flag
 	    a_o         	   <= a_i; // move A to next pe
         b_o         	   <= b_i; // move B to next pe
-	    firstAcc           <= 1'b1;
+	    firstAcc           <= 1'b1; // assert firstAcc
     end
 end
 endmodule

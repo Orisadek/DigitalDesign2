@@ -38,7 +38,6 @@ module matmul_stimulus #(
     integer MatrixC_rows,MatrixC_colms;
 	reg   [BUS_WIDTH*MAX_DIM*MAX_DIM-1:0] dataTempSp;
 	reg   [BUS_WIDTH-1:0] flagsTemp; 
-	reg   checkFinalTemp;
     logic [BUS_WIDTH-1:0] rowData;
     logic [BUS_WIDTH-1:0] colData ;
 	logic [DATA_WIDTH-1:0] row_data_cell;
@@ -79,28 +78,28 @@ module matmul_stimulus #(
  task open_files(); 
     begin
         matrixA_fd = $fopen(matrixA_File, "r");
-        if(matrixA_fd == 0) $fatal(1, $sformatf("Failed to open %s", matrixA_File));
+        if(matrixA_fd == 0) $fatal(1, $sformatf("Failed to open %s", matrixA_File)); // if the file doesn't open
         matrixB_fd = $fopen(matrixB_File, "r");
-        if(matrixB_fd == 0) $fatal(1, $sformatf("Failed to open %s", matrixB_File));
+        if(matrixB_fd == 0) $fatal(1, $sformatf("Failed to open %s", matrixB_File)); // if the file doesn't open
 		 modes_fd = $fopen(modes_File, "r");
-        if(modes_fd == 0) $fatal(1, $sformatf("Failed to open %s", modes_fd));            
+        if(modes_fd == 0) $fatal(1, $sformatf("Failed to open %s", modes_fd));       // if the file doesn't open        
     end 
  endtask
 //--------------------------read matrix B cell --------------------------------------//
 task read_data_B(input integer i, input integer j); begin
 	logic [DATA_WIDTH-1:0] col_data_cell_temp;
-    if($fscanf(matrixB_fd, "%s[^\n]", col_data_cell_str) != 1)
+    if($fscanf(matrixB_fd, "%s[^\n]", col_data_cell_str) != 1) //if there isn't int - fatal error
             $fatal(1, $sformatf("Failed to read the %0dth data-line of MatB", i*BUS_WIDTH+j+1));
-	$sscanf(col_data_cell_str, "%0d", col_data_cell_temp);
+	$sscanf(col_data_cell_str, "%0d", col_data_cell_temp);  // string to binary
 	colData[((j+1)*DATA_WIDTH-1)-:DATA_WIDTH] = col_data_cell_temp;
 end endtask
 
 //--------------------------read matrix A cell --------------------------------------//
 task read_data_A(input integer i, input integer j); begin
 	logic signed [DATA_WIDTH-1:0] row_data_cell_temp;
-	if($fscanf(matrixA_fd, "%s[^\n]", row_data_cell_str) != 1) 
+	if($fscanf(matrixA_fd, "%s[^\n]", row_data_cell_str) != 1) //if there isn't int - fatal error
 				$fatal(1, $sformatf("Failed to read the %0dth data-line of MatA", i*BUS_WIDTH+j+1)); 
-	$sscanf(row_data_cell_str, "%0d", row_data_cell_temp);
+	$sscanf(row_data_cell_str, "%0d", row_data_cell_temp); // string to binary
 	rowData[(DATA_WIDTH*(j+1)-1)-:DATA_WIDTH] = row_data_cell_temp;
 end endtask
 
@@ -109,17 +108,17 @@ end endtask
   begin
        //check all 3 files headers of the matrices First line is Matrices dimensions in syntext format of N x K
         //-----------------MatrixA file------------//
-		if($fscanf(matrixA_fd, "%d x %d\n", MatrixA_rows, MatrixA_colms) != 2) begin  //if the first row is not 2 numbers and they are no
+		if($fscanf(matrixA_fd, "%d x %d\n", MatrixA_rows, MatrixA_colms) != 2) begin  //if the first row is not 2 numbers - fatal error
 			$fatal(1, "Failed to read the size line of matrixA_FILE");
             $fclose(matrixA_fd);
         end
        //-----------------MatrixB file------------ //  
-        if($fscanf(matrixB_fd, "%d x %d\n", MatrixB_rows, MatrixB_colms) != 2) begin
+        if($fscanf(matrixB_fd, "%d x %d\n", MatrixB_rows, MatrixB_colms) != 2) begin //if the first row is not 2 numbers - fatal error
             $fatal(1, "Failed to read the size line of MatrixB_FILE");
             $fclose(matrixB_fd);
         end  
        //-----------------Modes file------------ //  
-		if($fscanf(modes_fd, "modbit = %d, write target %d, read target %d \n", modeBit, writeTarget,readTarget) != 3) begin
+		if($fscanf(modes_fd, "modbit = %d, write target %d, read target %d \n", modeBit, writeTarget,readTarget) != 3) begin //if the first row is not 3 numbers - fatal error
             $fatal(1, "Failed to read the size line of Mode_FILE");
             $fclose(modes_fd);
         end  
@@ -137,16 +136,15 @@ task do_reset; begin
 		paddr_o    = {(ADDR_WIDTH){1'b0}};
 		rowData    = {(BUS_WIDTH){1'b0}};
 		colData    = {(BUS_WIDTH){1'b0}};
-		dataTempSp = 0;
+		dataTempSp = {(BUS_WIDTH*MAX_DIM*MAX_DIM){1'b0}};
 		stim_valid = 1'b1;
 		stim_done_o = 1'b0;
-		checkFinalTemp = 1'b0;
         // Open Stimulus files
         open_files(); // Open all 3
         // Reset done.
 end endtask
 
-//---------------------------------read data----------------------------------------------------//
+//---------------------------------APB read data----------------------------------------------------//
 task apb_read(input bit [4:0] module_mem,input bit [2*$clog2(MAX_DIM):0] line,output  bit signed [BUS_WIDTH-1:0] data);
 	begin
 		psel_o       = 1'b1;
@@ -165,7 +163,7 @@ task apb_read(input bit [4:0] module_mem,input bit [2*$clog2(MAX_DIM):0] line,ou
 		pwrite_o     = 1'b0; 		
 end endtask	
 
-//---------------------------------write data------------------------------------------------------//
+//---------------------------------APB write data------------------------------------------------------//
 task apb_write(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM)-1:0] line,input bit [BUS_WIDTH-1:0] data);
 	begin
 		wait(pslverr_i == 1'b0);
@@ -190,22 +188,22 @@ end endtask
 task control_write(input bit start_bit,input bit mode_bit ,input bit [2:0] write_target,input bit [2:0] read_target,
 					input bit [1:0] n,input bit [1:0] k,input bit [1:0] m);
 	begin
-			bit [15:0] control_bit;  
-			control_bit[0] = start_bit;
-			control_bit[1] = mode_bit;
-			control_bit[3:2]= write_target-1;
-			if(read_target == 0)
+			bit [15:0] control_bits;  
+			control_bits[0] = start_bit;
+			control_bits[1] = mode_bit;
+			control_bits[3:2]= write_target-1;
+			if(read_target == 3'b000)
 				begin
-					control_bit[5:4]= read_target;
+					control_bits[5:4]= read_target;
 				end
 			else
 				begin
-				    control_bit[5:4]= read_target -1;
+				    control_bits[5:4]= read_target -1;
 				end
-			control_bit[9:8]= n;
-			control_bit[11:10]= k;
-			control_bit[13:12]= m;
-			@(posedge clk_i)apb_write(CONTROL,{($clog2(MAX_DIM)){1'b0}},control_bit);
+			control_bits[9:8]   = n;
+			control_bits[11:10] = k;
+			control_bits[13:12] = m;
+			@(posedge clk_i)apb_write(CONTROL,{($clog2(MAX_DIM)){1'b0}},control_bits);
 end endtask
 
 //--------------------------------get an err-----------------------------------------------------//
@@ -215,7 +213,7 @@ task get_pslverr();
 			control_write(1'b1,1'b0 ,2'b00,2'b00,2'b10,2'b10, 2'b10);
 			@(posedge clk_i)apb_read(FLAGS,0,data);
 			wait(busy_i == 1'b0);
-			@(posedge clk_i)apb_write(SP0,0,0);
+			@(posedge clk_i)apb_write(SP0,{($clog2(MAX_DIM)){1'b0}},{(BUS_WIDTH){1'b0}});
 end endtask
 
 //----------------------------------Init block------------------------------------------------------//
@@ -225,15 +223,14 @@ end endtask
 		logic [4:0] spIdx;
         if(matrixA_File == "") $fatal(1, "matrixA_File is not set");
         if(matrixB_File == "") $fatal(1, "matrixB_File is not set");
-		if(modes_File == "") $fatal(1, "modes_File is not set");
-		wait (rst_ni == 1'b0);
+		if(modes_File == "")   $fatal(1, "modes_File is not set");
+		wait (rst_ni == 1'b0); // wait for negedge
 	    do_reset();
         // Reset Done
-		wait (rst_ni == 1'b1);
+		wait (rst_ni == 1'b1); // wait for posedge
         // Start Image Stimulus
-		get_pslverr();
+		get_pslverr(); // make pslverr
         while(stim_valid == 1 && $feof(matrixB_fd) == 0 && $feof(matrixA_fd)== 0) begin
-		
 			set_data(); // First must succeed
             for(int i=0; i < MatrixA_rows; i=i+1) begin
                 for(int j=0; j < MatrixA_colms; j=j+1) begin
@@ -257,7 +254,7 @@ end endtask
 			rowData   = {(BUS_WIDTH){1'b0}};
 			colData   = {(BUS_WIDTH){1'b0}};
 			
-			case(writeTarget-1) 
+			case(writeTarget-1)  // case - write target idx
 				2'b00:    spIdx = SP0;
 				2'b01:    spIdx = SP1;
 				2'b10:    spIdx = SP2;
@@ -269,10 +266,10 @@ end endtask
 				begin
 					for(int j = 0 ; j < MAX_DIM;j = j+1)
 						begin
-							@(posedge clk_i) apb_read(spIdx,i*MAX_DIM+j,dataTempSp[i*BUS_WIDTH*MAX_DIM + j*BUS_WIDTH+:BUS_WIDTH]);
+							@(posedge clk_i) apb_read(spIdx,i*MAX_DIM+j,dataTempSp[i*BUS_WIDTH*MAX_DIM + j*BUS_WIDTH+:BUS_WIDTH]); // read SP
 						end
 				end
-			@(posedge clk_i) apb_read(FLAGS,0,flagsTemp);
+			@(posedge clk_i) apb_read(FLAGS,0,flagsTemp); // read flags
 			stim_done_o = 1'b1;
 			wait(golden_done_i == 1'b1);
 			stim_done_o = 1'b0;
