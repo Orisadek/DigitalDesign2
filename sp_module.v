@@ -64,18 +64,26 @@ always@(posedge clk_i or negedge rst_ni)
 	begin:send_address_sp		
 		if(~rst_ni)
 			begin
-				addrSendSp <= {($clog2(MAX_DIM)){1'b0}};
+				addrSendSp <= {(2*$clog2(MAX_DIM)){1'b0}};
 				overflowBit <= 1'b0;
 			end
 		else
 			begin
 				if(start_send_i && ~overflowBit){overflowBit,addrSendSp} <= addrSendSp + 1;	
+				else if(~start_send_i)
+					begin
+						addrSendSp <= {(2*$clog2(MAX_DIM)){1'b0}};
+						overflowBit <= 1'b0;
+					end
+				else
+					begin
+						addrSendSp <= {(2*$clog2(MAX_DIM)){1'b0}};
+					end
 			end
 	end
 	
-	
 assign addrWireOut = (start_send_i && ~overflowBit) ? addrSendSp : address_i;
-assign addrWireMatOut = (start_send_i && ~overflowBit) ? read_target_i : mat_num_i;
+assign addrWireMatOut = (start_send_i && mode_i) ? read_target_i : mat_num_i;
     // Output assignment for read data
 assign data_o    = (write_enable_i == 1'b0) ? mem[addrWireMatOut*MAX_DIM*MAX_DIM+addrWireOut]:{(BUS_WIDTH){1'b0}}; //read data is when not on write mod
 

@@ -41,8 +41,8 @@ module matmul_stimulus #(
 	logic [DATA_WIDTH-1:0] row_data_cell;
 	logic [DATA_WIDTH-1:0] col_data_cell;
 	logic  modeBit;
-	logic [1:0] writeTarget;
-	logic [1:0] readTarget;
+	logic [2:0] writeTarget;
+	logic [2:0] readTarget;
 	reg stim_valid;
 	string row_data_cell_str;
 	string col_data_cell_str;
@@ -194,9 +194,13 @@ task control_write(input bit start_bit,input bit mode_bit ,input bit [1:0] write
 			control_bit[1] = mode_bit;
 			control_bit[3:2]= write_target-1;
 			if(read_target == 0)
-				control_bit[5:4]= read_target;
+				begin
+					control_bit[5:4]= read_target;
+				end
 			else
-				control_bit[5:4]= read_target -1;
+				begin
+				    control_bit[5:4]= read_target -1;
+				end
 			control_bit[9:8]= n;
 			control_bit[11:10]= k;
 			control_bit[13:12]= m;
@@ -241,7 +245,7 @@ end endtask
 			rowData   = {(BUS_WIDTH){1'b0}};
 			colData   = {(BUS_WIDTH){1'b0}};
 			
-			case(writeTarget) 
+			case(writeTarget-1) 
 				2'b00:    spIdx = SP0;
 				2'b01:    spIdx = SP1;
 				2'b10:    spIdx = SP2;

@@ -59,7 +59,6 @@ initial begin:GOLDEN_MODEL
 					$fclose(matrixC_fd);
 					break;
 				end
-			$display("rows %d, cols %d",rows, cols);
       // Allocate memory for the matrix based on dimensions
 			matrixC = new[rows];
 			foreach(matrixC[k])
@@ -82,7 +81,6 @@ initial begin:GOLDEN_MODEL
 						begin
 						//bringing the C result from the SP.
 						//compare MATLAB matrixC[i][j] to our intf.
-						$display("data_sp_i[i*BUS_WIDTH*MAX_DIM + j*MAX_DIM+BUS_WIDTH-1] ",data_sp_i[i*BUS_WIDTH*MAX_DIM + j*MAX_DIM+BUS_WIDTH-1]);
 							if(data_sp_i[i*BUS_WIDTH*MAX_DIM + j*MAX_DIM+BUS_WIDTH-1])
 								begin
 									if(signed'(data_sp_i[i*BUS_WIDTH*MAX_DIM + j*BUS_WIDTH+:BUS_WIDTH]) != matrixC[i][j])

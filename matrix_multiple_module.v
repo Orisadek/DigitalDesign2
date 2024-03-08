@@ -53,7 +53,7 @@ generate
              .rst_ni(rst_ni), // reset
              .a_i(matA[i][j]), // a element in
              .b_i(matB[i][j]), // b element in
-			 .c_i(c_matrix_i[(j*(BUS_WIDTH)*MAX_DIM+(i+1)*(BUS_WIDTH))-1-:BUS_WIDTH]),
+			 .c_i(c_matrix_i[(i*(BUS_WIDTH)*MAX_DIM+(j+1)*(BUS_WIDTH))-1-:BUS_WIDTH]),
              .a_o(matA[i][j+1]), // a element out
              .b_o(matB[i+1][j]), // b element out
              .res_o(matC[i][j]), // result out 

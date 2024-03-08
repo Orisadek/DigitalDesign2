@@ -54,11 +54,11 @@ begin : multiply_and_acc // start and init if needed
     end
   else
     begin  
-      {overflowBit,res_o}  <= resultCalc; // multiple the argument and add to result and overflow bit
-	    overflow_o           <= (res_o[BUS_WIDTH-1] == resultMul[BUS_WIDTH-1]) && (resultMul[BUS_WIDTH-1]!=resultCalc[BUS_WIDTH-1]);  
-	    a_o         	       <= a_i; // move A to next pe
-      b_o         	    	 <= b_i; // move B to next pe
-	    firstAcc             <= 1'b1;
+        {overflowBit,res_o}  <= resultCalc; // multiple the argument and add to result and overflow bit
+	    overflow_o         <= (res_o[BUS_WIDTH-1] == resultMul[BUS_WIDTH-1]) && (resultMul[BUS_WIDTH-1]!=resultCalc[BUS_WIDTH-1]);  
+	    a_o         	   <= a_i; // move A to next pe
+        b_o         	   <= b_i; // move B to next pe
+	    firstAcc           <= 1'b1;
     end
 end
 endmodule

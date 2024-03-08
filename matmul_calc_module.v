@@ -161,13 +161,13 @@ always@(posedge clk_i or negedge rst_ni)
 			begin
 				if(start_i) // if start bit is up
 					begin
-						if(addrLogC == (n_dim_i+1)*(m_dim_i+1)-1)// in the last read
+						if(addrLogC == MAX_DIM*MAX_DIM-1)// in the last read
 							begin
 								c_bias_local[((addrLogC+1)*BUS_WIDTH-1)-:BUS_WIDTH] <= data_c_i; // insert data in
 								startBitC <= 1'b1; // finish to read C
 								addrLogC <= addrLogC + 1;  // inc addr
 							end
-						else if(addrLogC < (n_dim_i+1)*(m_dim_i+1)-1) // read to addr addrLogC
+						else if(addrLogC < (MAX_DIM*MAX_DIM)-1) // read to addr addrLogC
 							begin
 								c_bias_local[((addrLogC+1)*BUS_WIDTH-1)-:BUS_WIDTH] <= data_c_i;  // insert data in
 								addrLogC <= addrLogC + 1; // inc addr
