@@ -92,7 +92,7 @@ begin:begin_switch_case
 				strobeOpA = 0;
 				strobeOpB = 0; 
 			end
-		SP0: // scrachpad
+		SP0: // scrachpad 0
 			begin
 				data_o = sp_enable_i ? {(BUS_WIDTH){1'b0}} : dataSp;
 				wEnCtrl = 0;
@@ -101,7 +101,7 @@ begin:begin_switch_case
 				strobeOpA = 0;
 				strobeOpB = 0; 
 			end
-		SP1: // scrachpad
+		SP1: // scrachpad 1
 			begin
 				data_o = sp_enable_i ? {(BUS_WIDTH){1'b0}} : dataSp;
 				wEnCtrl = 0;
@@ -110,7 +110,7 @@ begin:begin_switch_case
 				strobeOpA = 0;
 				strobeOpB = 0; 
 			end
-		SP2: // scrachpad
+		SP2: // scrachpad 2
 			begin
 				data_o = sp_enable_i ? {(BUS_WIDTH){1'b0}} : dataSp;
 				wEnCtrl = 0;
@@ -119,7 +119,7 @@ begin:begin_switch_case
 				strobeOpA = 0;
 				strobeOpB = 0; 
 			end
-		SP3: // scrachpad
+		SP3: // scrachpad 3
 			begin
 				data_o = sp_enable_i ? {(BUS_WIDTH){1'b0}} : dataSp;
 				wEnCtrl = 0;

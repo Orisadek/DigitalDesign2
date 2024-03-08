@@ -25,7 +25,6 @@ module matmul_golden #(
 	logic [BUS_WIDTH-1:0] MatC_rows_o ;
 	int testNum;
     // Interface signals connect to internal decl'	
-	//wire [BUS_WIDTH-1:0] data_i [MAX_DIM-1:0][MAX_DIM-1:0] = intf.dataSp;
     wire clk_i     = intf.clk_i;
     wire rst_ni    = intf.rst_ni;
 	 

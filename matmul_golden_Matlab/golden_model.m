@@ -23,8 +23,8 @@ num_of_UF_matrices = 5;
 num_of_OF_matrices = 5;
 SPN = 4;
 temp = 0;
-Maxnumber = 2^(DATA_WIDTH-1);
-Minnumber = -2^(DATA_WIDTH-1);
+Maxnumber = 2^(DATA_WIDTH-1)-1;
+Minnumber = -2^(DATA_WIDTH-1)+1;
 history = {};
 for i = 1:num_of_random_matrices
     % Generate matrices size
@@ -102,7 +102,7 @@ for i = 1:num_of_random_matrices
     N = randi([1,MAX_DIM]);
     K = randi([1,MAX_DIM]);
     M = randi([1,MAX_DIM]);
-    modbit = randi([0,1]);
+    modbit = randi([0,0]);
     
     % Generate random matrices
     random_matrix_A = randi([Minnumber, Minnumber+5], N, K);
@@ -172,7 +172,7 @@ for i = 1:num_of_random_matrices
     N = randi([1,MAX_DIM]);
     K = randi([1,MAX_DIM]);
     M = randi([1,MAX_DIM]);
-    modbit = randi([0,1]);
+    modbit = randi([0,0]);
     
     % Generate random matrices
     random_matrix_A = randi([Maxnumber-5, Maxnumber], N, K);
@@ -242,4 +242,4 @@ end
 fclose(fidA);
 fclose(fidB);
 fclose(fidC);
-disp(['Matrices saved to file: ', MatrixA_file_name, ', ', MatrixB_file_name, ', ', MatrixC_file_name]);
+disp(['Matrices saved to file: ', MatrixA_file_name, ', ', MatrixB_file_name, ', ', MatrixC_file_name, ', ',Mod_file_name]);
