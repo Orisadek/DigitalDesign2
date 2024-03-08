@@ -80,8 +80,7 @@ module matmul_stimulus #(
         matrixB_fd = $fopen(matrixB_File, "r");
         if(matrixB_fd == 0) $fatal(1, $sformatf("Failed to open %s", matrixB_File));
 		 modes_fd = $fopen(modes_File, "r");
-        if(modes_fd == 0) $fatal(1, $sformatf("Failed to open %s", modes_fd));
-                          
+        if(modes_fd == 0) $fatal(1, $sformatf("Failed to open %s", modes_fd));            
     end 
  endtask
 //--------------------------read matrix B cell --------------------------------------//

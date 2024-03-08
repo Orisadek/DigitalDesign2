@@ -26,7 +26,8 @@ matmul_stimulus #(
 
 // Golden-Model module
 matmul_golden #(
- .matrixC_File($sformatf("%sMatrixC.txt",RESOURCE_BASE))
+ .matrixC_File($sformatf("%sMatrixC.txt",RESOURCE_BASE)),
+ .errors_File($sformatf("%serrors.txt",RESOURCE_BASE))
 ) u_golden (
     .intf    (intf),
     // TB Status

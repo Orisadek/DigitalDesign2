@@ -2,11 +2,12 @@
 
 module matmul_golden #(
     parameter string matrixC_File = "",
-	localparam [4:0] CONTROL    = 5'b00000, // Control address
-			         OPERAND_A  = 5'b00100, // Operand-A address
-			         OPERAND_B  = 5'b01000, // Operand-B address
-				     FLAGS	    = 5'b01100, // flags address
-			         SP 		= 5'b10000 // SP address
+	parameter string errors_File  = "",
+	localparam [4:0] CONTROL      = 5'b00000, // Control address
+			         OPERAND_A    = 5'b00100, // Operand-A address
+			         OPERAND_B    = 5'b01000, // Operand-B address
+				     FLAGS	      = 5'b01100, // flags address
+			         SP 		  = 5'b10000 // SP address
 
 ) (
     matmul_intf.GOLDEN    intf,
@@ -17,10 +18,11 @@ module matmul_golden #(
 );
 	import matmul_pkg::*;   
     integer matrixC_fd;
+	integer error_fd;
     integer MatrixC_rows,MatrixC_colms;
 	logic signed [BUS_WIDTH-1:0] dataSpCell;
 	logic [BUS_WIDTH-1:0] MatC_rows_o ;
-	
+	int testNum;
     // Interface signals connect to internal decl'	
 	//wire [BUS_WIDTH-1:0] data_i [MAX_DIM-1:0][MAX_DIM-1:0] = intf.dataSp;
     wire clk_i     = intf.clk_i;
@@ -35,6 +37,7 @@ module matmul_golden #(
 
 task do_reset; begin
         open_files(); // Open only C file
+		testNum = 1'b0;
 		// Reset done.
 end endtask
 
@@ -47,6 +50,7 @@ initial begin:GOLDEN_MODEL
     // Open the file for reading
     do_reset();
 	// Loop until end of file
+	
 	while (!$feof(matrixC_fd)) 
 		begin
 		wait(stim_done_i == 1'b0);
@@ -75,6 +79,7 @@ initial begin:GOLDEN_MODEL
 				end
 			end
 			errors = 0;
+			testNum++;
 			for (int i = 0; i < rows; i++)
 				begin
 					for (int j = 0; j < cols; j++)
@@ -99,7 +104,11 @@ initial begin:GOLDEN_MODEL
 								end
 						end
 				end
+				
 			$display("There are %d errors",errors);
+            error_fd = $fopen(errors_File, "a");
+			$fdisplay(error_fd,"Test %d There are %d errors",testNum,errors);
+			$fclose(error_fd);
 			golden_done_iteration_o = 1'b1;
 		end
 	$fclose(matrixC_fd);
