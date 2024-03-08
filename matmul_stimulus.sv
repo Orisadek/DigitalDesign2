@@ -26,6 +26,7 @@ module matmul_stimulus #(
 ) (
     matmul_intf.STIMULUS    intf,
 	output logic stim_done_o,
+	output logic [matmul_pkg::BUS_WIDTH-1:0] flags_o,
 	output logic [(matmul_pkg::BUS_WIDTH)*(matmul_pkg::MAX_DIM)*(matmul_pkg::MAX_DIM)-1:0] data_sp_o,
 	input  logic golden_done_i
 );
@@ -35,7 +36,9 @@ module matmul_stimulus #(
     integer MatrixA_rows,MatrixA_colms;
     integer MatrixB_rows,MatrixB_colms;
     integer MatrixC_rows,MatrixC_colms;
-	reg  [BUS_WIDTH*MAX_DIM*MAX_DIM-1:0] dataTempSp;
+	reg   [BUS_WIDTH*MAX_DIM*MAX_DIM-1:0] dataTempSp;
+	reg   [BUS_WIDTH-1:0] flagsTemp; 
+	reg   checkFinalTemp;
     logic [BUS_WIDTH-1:0] rowData;
     logic [BUS_WIDTH-1:0] colData ;
 	logic [DATA_WIDTH-1:0] row_data_cell;
@@ -70,7 +73,7 @@ module matmul_stimulus #(
     assign intf.pwdata_i  = pwdata_o;
     assign intf.paddr_i   = paddr_o;
 	assign data_sp_o      = dataTempSp;
-
+	assign flags_o        = flagsTemp;
 //-----------------------------tasks---------------------------------------------------//	
 //-----------------------------open files----------------------------------------------//
  task open_files(); 
@@ -110,7 +113,6 @@ end endtask
 			$fatal(1, "Failed to read the size line of matrixA_FILE");
             $fclose(matrixA_fd);
         end
-		  $display(MatrixA_rows,"MatrixA_rows");
        //-----------------MatrixB file------------ //  
         if($fscanf(matrixB_fd, "%d x %d\n", MatrixB_rows, MatrixB_colms) != 2) begin
             $fatal(1, "Failed to read the size line of MatrixB_FILE");
@@ -135,9 +137,10 @@ task do_reset; begin
 		paddr_o    = {(ADDR_WIDTH){1'b0}};
 		rowData    = {(BUS_WIDTH){1'b0}};
 		colData    = {(BUS_WIDTH){1'b0}};
-		dataTempSp   = 0;
+		dataTempSp = 0;
 		stim_valid = 1'b1;
 		stim_done_o = 1'b0;
+		checkFinalTemp = 1'b0;
         // Open Stimulus files
         open_files(); // Open all 3
         // Reset done.
@@ -146,7 +149,6 @@ end endtask
 //---------------------------------read data----------------------------------------------------//
 task apb_read(input bit [4:0] module_mem,input bit [2*$clog2(MAX_DIM):0] line,output  bit signed [BUS_WIDTH-1:0] data);
 	begin
-		$display("apb_read %d ",module_mem);
 		psel_o       = 1'b1;
 		pwrite_o     = 1'b0;
 		paddr_o[4:0] = module_mem; 
@@ -185,7 +187,7 @@ task apb_write(input bit [4:0] module_mem,input bit [$clog2(MAX_DIM)-1:0] line,i
 end endtask
 
 //--------------------------------write to control-----------------------------------------------------//
-task control_write(input bit start_bit,input bit mode_bit ,input bit [1:0] write_target,input bit [1:0] read_target,
+task control_write(input bit start_bit,input bit mode_bit ,input bit [2:0] write_target,input bit [2:0] read_target,
 					input bit [1:0] n,input bit [1:0] k,input bit [1:0] m);
 	begin
 			bit [15:0] control_bit;  
@@ -206,6 +208,16 @@ task control_write(input bit start_bit,input bit mode_bit ,input bit [1:0] write
 			@(posedge clk_i)apb_write(CONTROL,{($clog2(MAX_DIM)){1'b0}},control_bit);
 end endtask
 
+//--------------------------------get an err-----------------------------------------------------//
+task get_pslverr();
+	begin
+			bit [BUS_WIDTH-1:0] data;
+			control_write(1'b1,1'b0 ,2'b00,2'b00,2'b10,2'b10, 2'b10);
+			@(posedge clk_i)apb_read(FLAGS,0,data);
+			wait(busy_i == 1'b0);
+			@(posedge clk_i)apb_write(SP0,0,0);
+end endtask
+
 //----------------------------------Init block------------------------------------------------------//
 
  initial begin: INIT_STIM
@@ -219,6 +231,7 @@ end endtask
         // Reset Done
 		wait (rst_ni == 1'b1);
         // Start Image Stimulus
+		get_pslverr();
         while(stim_valid == 1 && $feof(matrixB_fd) == 0 && $feof(matrixA_fd)== 0) begin
 		
 			set_data(); // First must succeed
@@ -259,6 +272,7 @@ end endtask
 							@(posedge clk_i) apb_read(spIdx,i*MAX_DIM+j,dataTempSp[i*BUS_WIDTH*MAX_DIM + j*BUS_WIDTH+:BUS_WIDTH]);
 						end
 				end
+			@(posedge clk_i) apb_read(FLAGS,0,flagsTemp);
 			stim_done_o = 1'b1;
 			wait(golden_done_i == 1'b1);
 			stim_done_o = 1'b0;
@@ -266,13 +280,6 @@ end endtask
 		$fclose(matrixA_fd);
 		$fclose(matrixB_fd);
  end
-
-
-// change busy_i - so when matmul busy_i=1
-// add wait until not bust
-// change, when err stay until Reset
-// add when EOF get out of file
-
 
 
 endmodule

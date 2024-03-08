@@ -10,7 +10,7 @@
 
 package matmul_pkg;
 	// DUT Params
-  parameter int unsigned DATA_WIDTH = 8; // data width
+  parameter int unsigned DATA_WIDTH = 16; // data width
   parameter int unsigned BUS_WIDTH = 32; // bus width
   parameter int unsigned ADDR_WIDTH = 32; // address width
   localparam unsigned    MAX_DIM = BUS_WIDTH/DATA_WIDTH;

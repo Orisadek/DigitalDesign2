@@ -13,6 +13,7 @@ module matmul_golden #(
     matmul_intf.GOLDEN    intf,
 	input wire stim_done_i,
 	input wire [(matmul_pkg::BUS_WIDTH)*(matmul_pkg::MAX_DIM)*(matmul_pkg::MAX_DIM)-1:0] data_sp_i,
+	input wire [(matmul_pkg::BUS_WIDTH)-1:0] flags_i,
     output logic golden_done_o,
 	output logic golden_done_iteration_o
 );
@@ -50,7 +51,7 @@ initial begin:GOLDEN_MODEL
     // Open the file for reading
     do_reset();
 	// Loop until end of file
-	
+	error_fd = $fopen(errors_File, "w");
 	while (!$feof(matrixC_fd)) 
 		begin
 		wait(stim_done_i == 1'b0);
@@ -106,11 +107,11 @@ initial begin:GOLDEN_MODEL
 				end
 				
 			$display("There are %d errors",errors);
-            error_fd = $fopen(errors_File, "a");
-			$fdisplay(error_fd,"Test %d There are %d errors",testNum,errors);
-			$fclose(error_fd);
+			$fdisplay(error_fd,"Test %d :error num is %d errors",testNum,errors);
+			$fdisplay(error_fd,"Test %d :the flags are %b",testNum,flags_i);
 			golden_done_iteration_o = 1'b1;
 		end
+	$fclose(error_fd);
 	$fclose(matrixC_fd);
 	golden_done_o = 1;
 	end

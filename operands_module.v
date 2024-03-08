@@ -50,7 +50,7 @@ generate  // grenerate the block
 						  registers[index][(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <=  {(DATA_WIDTH){1'b0}}; // write data
 						end
 					end	
-				 else if(strobe_i[b]) //if we writing and in strobe and enabled
+				 else if(strobe_i[b]) //if  writing and in strobe[b]!=0 
 					begin
 						registers[address_i][(b+1)*DATA_WIDTH-1-:DATA_WIDTH] <=  data_i[(b+1)*DATA_WIDTH-1-:DATA_WIDTH]; // write data
 					end
@@ -81,7 +81,7 @@ always@(posedge clk_i or negedge rst_ni)
 			end
 	end
 	
-assign addrWireOut = (start_send_i && ~overflowBit) ? addrSendOp : address_i;
+assign addrWireOut = (start_send_i && ~overflowBit) ? addrSendOp : address_i; // if start_send_i - start send all the operand (line by line)
     // Output assignment for read data
 assign data_o  = (strobe_i == {(MAX_DIM){1'b0}}) ? registers[addrWireOut] : {(BUS_WIDTH){1'b0}}; // read the data async
 endmodule

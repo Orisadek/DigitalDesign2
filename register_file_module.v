@@ -35,7 +35,7 @@ localparam [4:0] CONTROL    = 5'b00000, // Control address
 				 SP2 		= 5'b11000, // SP address
 				 SP3 		= 5'b11100; // SP address
 //----------------------------variables------------------------------------------//
-wire signed [BUS_WIDTH-1:0] dataOpA,dataOpB,dataSp;
+wire signed [BUS_WIDTH-1:0] dataOpA,dataOpB,dataSp; 
 wire [BUS_WIDTH-1:0] dataFlags;
 wire [CONTROL_WIDTH-1:0] dataCtrl;
 reg wEnMatA,wEnMatB,wEnCtrl;
@@ -52,7 +52,6 @@ reg signed [BUS_WIDTH-1:0] data_o,data_a_o,data_b_o,data_c_o;
 assign  data_a_o = dataOpA;
 assign  data_b_o = dataOpB;
 assign  data_c_o = dataSp;
-
 //-----------------------------comb always - FSM-----------------------------------//
 always@(*)
 begin:begin_switch_case

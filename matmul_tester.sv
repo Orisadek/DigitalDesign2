@@ -11,6 +11,7 @@ wire  stim_done, golden_done_iteration;
 wire rst_ni = intf.rst_ni;
 wire clk_i  = intf.clk_i;
 wire [MAX_DIM*MAX_DIM*BUS_WIDTH-1:0] dataSP;
+wire [BUS_WIDTH-1:0] flags;
 //----------------------------Units----------------------------------//
 matmul_stimulus #(
     .matrixA_File($sformatf("%sMatrixA.txt",RESOURCE_BASE)),
@@ -20,6 +21,7 @@ matmul_stimulus #(
     .intf(intf),
 	.stim_done_o(stim_done),
 	.golden_done_i(golden_done_iteration),
+	.flags_o(flags),
 	.data_sp_o(dataSP)
     // TB Status
 );
@@ -32,6 +34,7 @@ matmul_golden #(
     .intf    (intf),
     // TB Status
     .stim_done_i(stim_done),
+	.flags_i(flags),
     .golden_done_o(golden_done),
 	.golden_done_iteration_o(golden_done_iteration),
 	.data_sp_i(dataSP)

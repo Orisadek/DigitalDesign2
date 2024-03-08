@@ -14,7 +14,7 @@ fidC   = fopen(MatrixC_file_name, 'w');
 fidMOD = fopen(Mod_file_name,   'w');
 
 %parameters
-DATA_WIDTH = 8;
+DATA_WIDTH = 16;
 BUS_WIDTH = 32;
 ADDR_WIDTH = 32;
 MAX_DIM = BUS_WIDTH/DATA_WIDTH;
