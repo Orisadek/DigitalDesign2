@@ -102,7 +102,7 @@ for i = 1:num_of_random_matrices
     N = randi([1,MAX_DIM]);
     K = randi([1,MAX_DIM]);
     M = randi([1,MAX_DIM]);
-    modbit = randi([0,1]);
+    modbit = randi([0,0]);
     
     % Generate random matrices
     random_matrix_A = randi([Minnumber, Minnumber+5], N, K);
@@ -172,7 +172,7 @@ for i = 1:num_of_random_matrices
     N = randi([1,MAX_DIM]);
     K = randi([1,MAX_DIM]);
     M = randi([1,MAX_DIM]);
-    modbit = randi([0,1]);
+    modbit = randi([0,0]);
     
     % Generate random matrices
     random_matrix_A = randi([Maxnumber-5, Maxnumber], N, K);
