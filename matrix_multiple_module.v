@@ -113,9 +113,9 @@ always @(posedge clk_i or negedge rst_ni)
     if(~rst_ni)  // on negative edge
      begin
         for (index_a = 0; index_a < MAX_DIM; index_a = index_a[2*MAX_DIM:0]+1) // loop with index_a
-          begin : reset_a
+			begin : reset_a
 			       regMatA[index_a] <= {DATA_WIDTH{1'b0}}; // init to 0
-		      end
+		     end
 	   end
    else if(start_i && counter <(k_dim_i+m_dim_i+n_dim_i-2+3))  // make sure not to happen if we finished
 		begin
@@ -127,6 +127,13 @@ always @(posedge clk_i or negedge rst_ni)
 					a_matrix_i[((index_a*MATRIX_WORD)+((counter-index_a+1)*DATA_WIDTH)-1)-:DATA_WIDTH]
 					: {DATA_WIDTH{1'b0}};                                      // else insert zero (MUX)
 				end
+		end
+	else
+		begin
+			 for (index_a = 0; index_a < MAX_DIM; index_a = index_a[2*MAX_DIM:0]+1) // loop with index_a
+				begin : zero_reg_a
+			       regMatA[index_a] <= {DATA_WIDTH{1'b0}}; // init to 0
+		     end
 		end
  end
 
@@ -153,6 +160,13 @@ always @(posedge clk_i or negedge rst_ni)
 					{DATA_WIDTH{1'b0}};									   // else insert zero (MUX)
 				end // end for
 		end	 // end else if
+	else	
+		begin
+			 for (index_b = 0; index_b < MAX_DIM; index_b = index_b[2*MAX_DIM:0]+1) // loop with index_a
+				begin : zero_reg_b
+			       regMatB[index_b] <= {DATA_WIDTH{1'b0}}; // init to 0
+		     end
+		end
 end // end always
 
 //---------------------to remove start bit--------------------//

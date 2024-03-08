@@ -10,7 +10,7 @@ import matmul_pkg::*;
 wire  stim_done, golden_done_iteration;
 wire rst_ni = intf.rst_ni;
 wire clk_i  = intf.clk_i;
-
+wire [MAX_DIM*MAX_DIM*BUS_WIDTH-1:0] dataSP;
 //----------------------------Units----------------------------------//
 matmul_stimulus #(
     .matrixA_File($sformatf("%sMatrixA.txt",RESOURCE_BASE)),
@@ -19,26 +19,31 @@ matmul_stimulus #(
 ) u_stim (
     .intf(intf),
 	.stim_done_o(stim_done),
-	.golden_done_i(golden_done_iteration)
+	.golden_done_i(golden_done_iteration),
+	.data_sp_o(dataSP)
     // TB Status
 );
 
 // Golden-Model module
 matmul_golden #(
- .matrixC_File($sformatf("%sMatrixA.txt",RESOURCE_BASE))
+ .matrixC_File($sformatf("%sMatrixC.txt",RESOURCE_BASE))
 ) u_golden (
     .intf    (intf),
     // TB Status
     .stim_done_i(stim_done),
     .golden_done_o(golden_done),
-	.golden_done_iteration_o(golden_done_iteration)
+	.golden_done_iteration_o(golden_done_iteration),
+	.data_sp_i(dataSP)
 );
 
 
 initial begin: TB_INIT
     wait(rst_ni); wait(!rst_ni);
-    wait(stim_done);
-    $display("[%0t] Stim Done.", $time);
+	while(golden_done !=1)
+		begin
+			wait(stim_done);
+			$display("[%0t] Stim Done.", $time);
+		end
     wait(golden_done);
     $display("[%0t] Check Done.", $time);
     $finish;

@@ -11,26 +11,20 @@ module matmul_golden #(
 ) (
     matmul_intf.GOLDEN    intf,
 	input wire stim_done_i,
+	input wire [(matmul_pkg::BUS_WIDTH)*(matmul_pkg::MAX_DIM)*(matmul_pkg::MAX_DIM)-1:0] data_sp_i,
     output logic golden_done_o,
 	output logic golden_done_iteration_o
 );
-
 	import matmul_pkg::*;   
     integer matrixC_fd;
     integer MatrixC_rows,MatrixC_colms;
-
+	logic signed [BUS_WIDTH-1:0] dataSpCell;
 	logic [BUS_WIDTH-1:0] MatC_rows_o ;
-    logic [BUS_WIDTH-1:0] C_temp;
 	
     // Interface signals connect to internal decl'	
-	wire [BUS_WIDTH-1:0] data_i [MAX_DIM-1:0][MAX_DIM-1:0] = intf.dataSp;
+	//wire [BUS_WIDTH-1:0] data_i [MAX_DIM-1:0][MAX_DIM-1:0] = intf.dataSp;
     wire clk_i     = intf.clk_i;
     wire rst_ni    = intf.rst_ni;
-
-	logic first;
- 
-	string row_data_cell_str;
-	string col_data_cell_str;
 	 
  task open_files(); 
     begin
@@ -55,6 +49,7 @@ initial begin:GOLDEN_MODEL
 	// Loop until end of file
 	while (!$feof(matrixC_fd)) 
 		begin
+		wait(stim_done_i == 1'b0);
 		golden_done_iteration_o = 0;
 		wait(stim_done_i == 1'b1);
       // Read dimensions of the matrix from the file
@@ -64,6 +59,7 @@ initial begin:GOLDEN_MODEL
 					$fclose(matrixC_fd);
 					break;
 				end
+			$display("rows %d, cols %d",rows, cols);
       // Allocate memory for the matrix based on dimensions
 			matrixC = new[rows];
 			foreach(matrixC[k])
@@ -86,10 +82,22 @@ initial begin:GOLDEN_MODEL
 						begin
 						//bringing the C result from the SP.
 						//compare MATLAB matrixC[i][j] to our intf.
-							if(data_i[i][j] != matrixC[i][j])
+						$display("data_sp_i[i*BUS_WIDTH*MAX_DIM + j*MAX_DIM+BUS_WIDTH-1] ",data_sp_i[i*BUS_WIDTH*MAX_DIM + j*MAX_DIM+BUS_WIDTH-1]);
+							if(data_sp_i[i*BUS_WIDTH*MAX_DIM + j*MAX_DIM+BUS_WIDTH-1])
 								begin
-									errors++;
-									$display("Error, the number in GOLDEN does not match the number in Sp, epected to read %d and instead read %d",matrixC[i][j],data_i[i][j]);
+									if(signed'(data_sp_i[i*BUS_WIDTH*MAX_DIM + j*BUS_WIDTH+:BUS_WIDTH]) != matrixC[i][j])
+										begin
+											errors++;
+											$display("Error, the number in GOLDEN does not match the number in Sp, epected to read %d and instead read %d",matrixC[i][j],signed'(data_sp_i[i*BUS_WIDTH*MAX_DIM + j*MAX_DIM+:BUS_WIDTH]));
+										end
+								end
+							else
+								begin
+									if(data_sp_i[i*BUS_WIDTH*MAX_DIM+j*BUS_WIDTH+:BUS_WIDTH] != matrixC[i][j])
+										begin
+											errors++;
+											$display("Error, the number in GOLDEN does not match the number in Sp, epected to read %d and instead read %d",matrixC[i][j],data_sp_i[i*BUS_WIDTH*MAX_DIM + j*MAX_DIM+:BUS_WIDTH]);
+										end
 								end
 						end
 				end
@@ -97,6 +105,7 @@ initial begin:GOLDEN_MODEL
 			golden_done_iteration_o = 1'b1;
 		end
 	$fclose(matrixC_fd);
+	golden_done_o = 1;
 	end
 endmodule
 
