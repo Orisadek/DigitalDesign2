@@ -21,7 +21,7 @@ MAX_DIM = BUS_WIDTH/DATA_WIDTH;
 num_of_random_matrices = 8;
 num_of_UF_matrices = 5;
 num_of_OF_matrices = 5;
-SPN = 2;
+SPN = 4;
 temp = 0;
 Maxnumber = 2^(DATA_WIDTH-1)-1;
 Minnumber = -2^(DATA_WIDTH-1)+1;
@@ -99,14 +99,14 @@ for i = 1:num_of_random_matrices
 %----------generate for Underflow cases ----------
    for i = 1:num_of_UF_matrices
     % Generate matrices size
-    N = 2;%randi([1,MAX_DIM]);
-    K = 2;%randi([1,MAX_DIM]);
-    M = 2;%randi([1,MAX_DIM]);
-    modbit = randi([1,1]);
+    N = randi([1,1]);
+    K = randi([1,2]);
+    M = randi([1,1]);
+    modbit = randi([0,1]);
     
     % Generate random matrices
-    random_matrix_A = randi([Minnumber, Minnumber+5], N, K);
-    random_matrix_B = randi([Maxnumber-6, Maxnumber], K, M);
+    random_matrix_A = randi([Minnumber+1, Minnumber+5], N, K);
+    random_matrix_B = randi([Maxnumber-6, Maxnumber-1], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
     
     if(modbit)
@@ -169,14 +169,14 @@ for i = 1:num_of_random_matrices
 
     for i = 1:num_of_OF_matrices
     % Generate matrices size
-    N = randi([2,MAX_DIM]);
-    K = randi([2,MAX_DIM]);
-    M = randi([2,MAX_DIM]);
-    modbit = randi([1,1]);
+    N = 2;%randi([1,MAX_DIM]);
+    K = 2;%randi([1,MAX_DIM]);
+    M = 2;%randi([1,MAX_DIM]);
+    modbit = randi([0,1]);
     
     % Generate random matrices
-    random_matrix_A = randi([Maxnumber-5, Maxnumber], N, K);
-    random_matrix_B = randi([Maxnumber-5, Maxnumber], K, M);
+    random_matrix_A = randi([Maxnumber-10, Maxnumber-1], N, K);
+    random_matrix_B = randi([Maxnumber-10, Maxnumber-1], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
     
     if(modbit)
