@@ -14,7 +14,7 @@ fidC   = fopen(MatrixC_file_name, 'w');
 fidMOD = fopen(Mod_file_name,   'w');
 
 %parameters
-DATA_WIDTH = 8;
+DATA_WIDTH = 16;
 BUS_WIDTH = 32;
 ADDR_WIDTH = 32;
 MAX_DIM = BUS_WIDTH/DATA_WIDTH;
@@ -105,8 +105,8 @@ for i = 1:num_of_random_matrices
     modbit = randi([0,1]);
     
     % Generate random matrices
-    random_matrix_A = randi([Minnumber, Minnumber+(2^(DATA_WIDTH-2))], N, K);
-    random_matrix_B = randi([Maxnumber-(2^(DATA_WIDTH-2)), Maxnumber], K, M);
+    random_matrix_A = randi([Minnumber, Minnumber+5], N, K);
+    random_matrix_B = randi([Maxnumber-6, Maxnumber], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
     
     if(modbit)
@@ -175,8 +175,8 @@ for i = 1:num_of_random_matrices
     modbit = randi([0,1]);
     
     % Generate random matrices
-    random_matrix_A = randi([Maxnumber-(2^(DATA_WIDTH-2)), Maxnumber], N, K);
-    random_matrix_B = randi([Maxnumber-(2^(DATA_WIDTH-2)), Maxnumber], K, M);
+    random_matrix_A = randi([Maxnumber-5, Maxnumber], N, K);
+    random_matrix_B = randi([Maxnumber-5, Maxnumber], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
     
     if(modbit)
