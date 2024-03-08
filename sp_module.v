@@ -11,13 +11,15 @@
 `resetall
 `timescale 1ns/10ps
 module sp_module (clk_i,rst_ni,write_enable_i,address_i,data_i,mode_i,start_send_i,write_target_i,
-read_target_i,data_o); //descripition for all inputs\outputs
-input clk_i,rst_ni; // clk,reset
+read_target_i,mat_num_i,data_o); //descripition for all inputs\outputs
+//-----------------------------ports----------------------------------------------//
+input clk_i,rst_ni,mat_num_i; // clk,reset
 input write_enable_i,mode_i; // enable writing to operands
 input address_i; // adress of writing (for line/col)
 input data_i,start_send_i; //the data we want to write
 input read_target_i,write_target_i;
 output data_o; // the data we read (line/col)
+//----------------------------parameters-----------------------------------------//
 parameter  SP_NTARGETS = 4; //The number of addressable targets in sp
 parameter  DATA_WIDTH  = 32; // data width
 parameter  BUS_WIDTH   = 64; // bus width
@@ -38,8 +40,10 @@ reg  [BUS_WIDTH-1:0] mem [SP_NTARGETS*MAX_DIM*MAX_DIM-1:0]; // where we keep the
 reg  [$clog2(MAX_DIM*MAX_DIM*SP_NTARGETS)+1:0]index_insert_sp;
 reg  [2*$clog2(MAX_DIM)-1:0] addrSendSp;
 wire [2*$clog2(MAX_DIM)-1:0] addrWireOut;
+wire [1:0] addrWireMatOut;
+wire [1:0] mat_num_i;
 
-
+//-------------------------------insert data---------------------------------------//
 always @(posedge clk_i or negedge rst_ni) 
 	begin: writing_to_sp // we want it to activate during clk or rst
 		if (~rst_ni) //add reset
@@ -55,23 +59,33 @@ always @(posedge clk_i or negedge rst_ni)
 		end
 end
 
+//--------------------------------read data ----------------------------------------//
 always@(posedge clk_i or negedge rst_ni)
 	begin:send_address_sp		
 		if(~rst_ni)
 			begin
-				addrSendSp <= {($clog2(MAX_DIM)){1'b0}};
+				addrSendSp <= {(2*$clog2(MAX_DIM)){1'b0}};
 				overflowBit <= 1'b0;
 			end
 		else
 			begin
 				if(start_send_i && ~overflowBit){overflowBit,addrSendSp} <= addrSendSp + 1;	
+				else if(~start_send_i)
+					begin
+						addrSendSp <= {(2*$clog2(MAX_DIM)){1'b0}};
+						overflowBit <= 1'b0;
+					end
+				else
+					begin
+						addrSendSp <= {(2*$clog2(MAX_DIM)){1'b0}};
+					end
 			end
 	end
 	
-	
 assign addrWireOut = (start_send_i && ~overflowBit) ? addrSendSp : address_i;
+assign addrWireMatOut = (start_send_i && mode_i) ? read_target_i : mat_num_i;
     // Output assignment for read data
-assign data_o    = (write_enable_i == 1'b0 && mode_i) ? mem[read_target_i*MAX_DIM*MAX_DIM+addrSendSp]:{(BUS_WIDTH){1'b0}}; //read data is when not on write mod
+assign data_o    = (write_enable_i == 1'b0) ? mem[addrWireMatOut*MAX_DIM*MAX_DIM+addrWireOut]:{(BUS_WIDTH){1'b0}}; //read data is when not on write mod
 
 
 endmodule

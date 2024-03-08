@@ -8,19 +8,19 @@ MatrixC_file_name = 'MatrixC.txt';   %'MatrixC file name'
 Mod_file_name = 'ModFile.txt';
 % Open the file for writing
 
-fidA = fopen(MatrixA_file_name, 'w');
-fidB = fopen(MatrixB_file_name, 'w');
-fidC = fopen(MatrixC_file_name, 'w');
-fidMOD = fopen(Mod_file_name, 'w');
+fidA   = fopen(MatrixA_file_name, 'w');
+fidB   = fopen(MatrixB_file_name, 'w');
+fidC   = fopen(MatrixC_file_name, 'w');
+fidMOD = fopen(Mod_file_name,   'w');
 
 %parameters
 DATA_WIDTH = 8;
 BUS_WIDTH = 32;
 ADDR_WIDTH = 32;
 MAX_DIM = BUS_WIDTH/DATA_WIDTH;
-num_of_random_matrices = 15;
-num_of_UF_matrices = 15;
-num_of_OF_matrices = 15;
+num_of_random_matrices = 8;
+num_of_UF_matrices = 5;
+num_of_OF_matrices = 5;
 SPN = 4;
 temp = 0;
 Maxnumber = 2^(DATA_WIDTH-1);
@@ -37,7 +37,7 @@ for i = 1:num_of_random_matrices
     random_matrix_A = randi([Minnumber, Maxnumber], N, K);
     random_matrix_B = randi([Minnumber, Maxnumber], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
-    
+
     if(modbit)
         for index = 1:i           
            try
@@ -105,8 +105,8 @@ for i = 1:num_of_random_matrices
     modbit = randi([0,1]);
     
     % Generate random matrices
-    random_matrix_A = randi([Minnumber, Minnumber+1000], N, K);
-    random_matrix_B = randi([Maxnumber-1000, Maxnumber], K, M);
+    random_matrix_A = randi([Minnumber, Minnumber+(2^(DATA_WIDTH-2))], N, K);
+    random_matrix_B = randi([Maxnumber-(2^(DATA_WIDTH-2)), Maxnumber], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
     
     if(modbit)
@@ -136,8 +136,7 @@ for i = 1:num_of_random_matrices
     fprintf(fidMOD,'write target %d, ',random_SNP);
     fprintf(fidMOD, 'read target %d', temp);
     fprintf(fidMOD, '\n');  
-   
-    random_matrix_B = random_matrix_B';
+     random_matrix_B = random_matrix_B';
     % Write the matrices to the files
    
     % Save matrix A to file
@@ -176,8 +175,8 @@ for i = 1:num_of_random_matrices
     modbit = randi([0,1]);
     
     % Generate random matrices
-    random_matrix_A = randi([Maxnumber-1000, Maxnumber], N, K);
-    random_matrix_B = randi([Maxnumber-1000, Maxnumber], K, M);
+    random_matrix_A = randi([Maxnumber-(2^(DATA_WIDTH-2)), Maxnumber], N, K);
+    random_matrix_B = randi([Maxnumber-(2^(DATA_WIDTH-2)), Maxnumber], K, M);
     random_matrix_C = random_matrix_A * random_matrix_B;
     
     if(modbit)
@@ -237,9 +236,7 @@ for i = 1:num_of_random_matrices
         fprintf(fidC, '\n');
     end
     fprintf(fidC, '\n\n');
-    end
-
-
+end
 
     % Close the file
 fclose(fidA);

@@ -18,8 +18,8 @@ matmul_intf intf(
 );
 // Init clock process
 initial forever 
-	//#(CLK_NS/2) clk_i = ~clk_i;
-	#(5) clk_i = ~clk_i;
+	#(CLK_NS/2) clk_i = ~clk_i;
+	//#(5) clk_i = ~clk_i;
 // Init reset process
 initial begin: TOP_RST
 	rst_ni = 1'b1; // Assert reset
@@ -51,13 +51,10 @@ matmul #(
    
 );
 
-// TODO : Override this path parameter !!!
 matmul_tester #(
-	.RESOURCE_BASE("C:/Users/orisa/OneDrive - post.bgu.ac.il/bguStudy/fourth_year/semester_a/logical_design_verilog/LAB2/MatLab_golden_model/matmul_golden/")
+	.RESOURCE_BASE("C:/Users/orisa/OneDrive - post.bgu.ac.il/bguStudy/fourth_year/semester_a/logical_design_verilog/LAB2/DigitalDesign2/matmul_golden_Matlab/")
 ) u_tester (
    .intf(intf)
-  // .clk_i(clk_i),
-  // .rst_ni(rst_ni)
 );
 
 endmodule 

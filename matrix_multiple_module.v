@@ -53,7 +53,7 @@ generate
              .rst_ni(rst_ni), // reset
              .a_i(matA[i][j]), // a element in
              .b_i(matB[i][j]), // b element in
-			 .c_i(c_matrix_i[(j*(BUS_WIDTH)*MAX_DIM+(i+1)*(BUS_WIDTH))-1-:BUS_WIDTH]),
+			 .c_i(c_matrix_i[(i*(BUS_WIDTH)*MAX_DIM+(j+1)*(BUS_WIDTH))-1-:BUS_WIDTH]),
              .a_o(matA[i][j+1]), // a element out
              .b_o(matB[i+1][j]), // b element out
              .res_o(matC[i][j]), // result out 
@@ -69,7 +69,7 @@ endgenerate
 generate
   for (j = 0; j < MAX_DIM; j = j +1) begin : rows_assign // connect rows output and matC
 	   for (i = 0; i < MAX_DIM; i = i +1) begin : cols_assign // connect cols output and matC
-		     assign c_matrix_o[(j*(BUS_WIDTH)*MAX_DIM+(i+1)*(BUS_WIDTH))-1-:BUS_WIDTH] = matC[i][j]; // conect the wires
+		     assign c_matrix_o[(j*(BUS_WIDTH)*MAX_DIM+(i+1)*(BUS_WIDTH))-1-:BUS_WIDTH] = matC[j][i]; // conect the wires
 	   end // end for i
   end // end for j
  endgenerate  
@@ -97,7 +97,7 @@ always @(posedge clk_i or negedge rst_ni)
 		end
   else if(start_i) // if start bit
 		begin
-			if(~(counter>=(k_dim_i+m_dim_i+n_dim_i-2+3))) 
+			if(counter < (k_dim_i+m_dim_i+n_dim_i+1) || counter == (k_dim_i+m_dim_i+n_dim_i+1)) 
 				counter <= counter[2*MAX_DIM-1:0]+1; //  count up with clk
 		end
   else // if posedge clk and start != 1 -> initialize counter
@@ -113,9 +113,9 @@ always @(posedge clk_i or negedge rst_ni)
     if(~rst_ni)  // on negative edge
      begin
         for (index_a = 0; index_a < MAX_DIM; index_a = index_a[2*MAX_DIM:0]+1) // loop with index_a
-          begin : reset_a
+			begin : reset_a
 			       regMatA[index_a] <= {DATA_WIDTH{1'b0}}; // init to 0
-		      end
+		     end
 	   end
    else if(start_i && counter <(k_dim_i+m_dim_i+n_dim_i-2+3))  // make sure not to happen if we finished
 		begin
@@ -127,6 +127,13 @@ always @(posedge clk_i or negedge rst_ni)
 					a_matrix_i[((index_a*MATRIX_WORD)+((counter-index_a+1)*DATA_WIDTH)-1)-:DATA_WIDTH]
 					: {DATA_WIDTH{1'b0}};                                      // else insert zero (MUX)
 				end
+		end
+	else
+		begin
+			 for (index_a = 0; index_a < MAX_DIM; index_a = index_a[2*MAX_DIM:0]+1) // loop with index_a
+				begin : zero_reg_a
+			       regMatA[index_a] <= {DATA_WIDTH{1'b0}}; // init to 0
+		     end
 		end
  end
 
@@ -145,14 +152,21 @@ always @(posedge clk_i or negedge rst_ni)
 		begin
 			for (index_b = 0; index_b < MAX_DIM; index_b = index_b[2*MAX_DIM:0] +1) // loop with index_a 
 				begin : Top  // start insert to reg the values
-					regMatB[index_b] <= (counter-index_b>=0 && counter-index_b<{{(2*MAX_DIM){1'b0}},m_dim_i+1} 
-					&& index_b < {{(2*MAX_DIM-1){1'b0}},k_dim_i+1})
+					regMatB[index_b] <= (counter-index_b>=0 && counter-index_b<{{(2*MAX_DIM){1'b0}},k_dim_i+1} 
+					&& index_b < {{(2*MAX_DIM-1){1'b0}},m_dim_i+1})
 					? // if the condition is true insert value 
 					b_matrix_i[((index_b*MATRIX_WORD)+((counter-index_b+1)*DATA_WIDTH)-1)-:DATA_WIDTH]
 					:
 					{DATA_WIDTH{1'b0}};									   // else insert zero (MUX)
 				end // end for
 		end	 // end else if
+	else	
+		begin
+			 for (index_b = 0; index_b < MAX_DIM; index_b = index_b[2*MAX_DIM:0]+1) // loop with index_a
+				begin : zero_reg_b
+			       regMatB[index_b] <= {DATA_WIDTH{1'b0}}; // init to 0
+		     end
+		end
 end // end always
 
 //---------------------to remove start bit--------------------//

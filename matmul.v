@@ -11,17 +11,18 @@
 `resetall
 `timescale 1ns/10ps
 module matmul(clk_i,rst_ni,psel_i,penable_i,pwrite_i,pstrb_i,pwdata_i,paddr_i,pready_o,pslverr_o,prdata_o,busy_o);
-input  clk_i,rst_ni,psel_i,penable_i;
-input  pwrite_i,pstrb_i,pwdata_i,paddr_i;
-output pready_o,pslverr_o,prdata_o,busy_o;
+//-------------------ports----------------------------------------------//
+input  clk_i,rst_ni,psel_i,penable_i; // input ports
+input  pwrite_i,pstrb_i,pwdata_i,paddr_i; // input ports
+output pready_o,pslverr_o,prdata_o,busy_o; // output ports
+//-----------------parameters-----------------------------------------//
 parameter DATA_WIDTH = 8; // data width
 parameter BUS_WIDTH = 16; // bus width
 parameter ADDR_WIDTH = 32; // addr width
 parameter  SP_NTARGETS = 4; //The number of addressable targets in sp
 localparam MAX_DIM = (BUS_WIDTH / DATA_WIDTH); // max dim matrix
-
+//-----------------variables------------------------------------------//
 wire rst_ni,clk_i;
-
 wire [1:0] nDim,kDim,mDim;
 wire startBit,modeBit;
 wire [BUS_WIDTH-1:0] flagsData;
@@ -39,12 +40,15 @@ wire [ADDR_WIDTH-1:0] addressReadA,addressReadB,addressReadC;
 wire [BUS_WIDTH-1:0] readDataMem,writeDataMem;
 wire [BUS_WIDTH-1:0] readDataA,readDataB,readDataC;
 wire [BUS_WIDTH-1:0] writeDataApb,writeDataMatmul;
-wire writeEnable;
+wire writeEnable,busyBit;
+
+//----------------------assign wires---------------------------//
 assign addressMem   = startBit ? addressMatmul : addressApb;
 assign writeDataMem = startBit ? writeDataMatmul : writeDataApb;
 assign writeEnable  = ~startBit ? pwrite_i : 1'b0;
+assign busy_o = (busyBit || startBit);
 
-
+//---------------------Units------------------------------------//
 matmul_calc_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR_WIDTH)) U_matmul_calc(
 .clk_i(clk_i),
 .rst_ni(rst_ni),
@@ -78,12 +82,10 @@ apb_slave_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR
 .pready_o(pready_o),
 .pslverr_o(pslverr_o),
 .prdata_o(prdata_o),
-.busy_o(busy_o),
+.busy_o(busyBit),
 .bus_mem_o(writeDataApb),
 .strobe_o(pstrbApb)
 );
-
-
 
 register_file_module#(.DATA_WIDTH(DATA_WIDTH),.BUS_WIDTH(BUS_WIDTH),.ADDR_WIDTH(ADDR_WIDTH),.SP_NTARGETS(SP_NTARGETS)) U_register_file(
 .clk_i(clk_i),
